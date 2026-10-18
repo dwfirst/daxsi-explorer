@@ -8,7 +8,6 @@ This document details the spatial distribution, physical placement, vulnerabilit
 
 To eliminate single points of failure (SPOF) and protect computing assets from kinetic, environmental, or electromagnetic threats, the computing matrix is divided into three structurally isolated zones.
 
-Используйте код с осторожностью.
 [ FRONT FASCIA ] -> Vulnerable Zone (Impact/Water)
 │
 [ CABIN FOREDECK ] ──> Node 01: Operator Command (Safe, Climate-Controlled)
