@@ -15,15 +15,14 @@ Modern artificial intelligence is hitting the **Data Wall**. Over 80% of data wi
 
 ### Core Scientific Pillars
 
-Используйте код с осторожностью.
 ┌────────────────────────────────────────────────────────────────────────┐
 │ 01. ULTRA-SPECTRAL PERCEPTION                                          │
-│     Captures physical spectra (electromagnetic, radiation, biochemical, │
+│     Captures physical spectra (electromagnetic, radiation, biochemical,│
 │     acoustic) far outside human sensory visibility. Logs are cross-    │
 │     referenced with academic baselines to correct scientific models.   │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 02. FIRST-PRINCIPLES DATASETS                                          │
-│     Fuses global LLM foundations with crystal-clean physical inputs.    │
+│     Fuses global LLM foundations with crystal-clean physical inputs.   │
 │     Unlocks exponential technological leaps in cross-disciplinary.     │
 └────────────────────────────────────────────────────────────────────────┘
 
@@ -48,12 +47,9 @@ Modern artificial intelligence is hitting the **Data Wall**. Over 80% of data wi
 
 ### Core Architecture & Data Flow
 
-[ PHYSICAL WORLD ] ──(Raw Spectra)──> [ SENSORY COCOON ]
-│
-(ROS 2 Stream)
-▼
-[ HUMAN OPERATOR ] ──(Fine-Tuning)──> [ ONBOARD COMPUTE ] <──(Hybrid RAG)──> [ SPACEX STARLINK ]
-(Driver / Mentor)                    (1TB+ VRAM Cluster)                     (Global xAI Core)
+[ PHYSICAL WORLD ]──(Raw Spectra)──>[ SENSORY COCOON ]│(ROS 2 Stream) ▼
+[ HUMAN OPERATOR ] ──(Fine-Tuning)──>[ ONBOARD COMPUTE ]<──(Hybrid RAG)──>[ SPACEX STARLINK ]
+(Driver / Mentor) (1TB+ VRAM Cluster) (Global xAI Core)
 
 *   `Sovereign In-Car Processing`
     The 1TB+ VRAM supercomputing cluster operates completely locally within the Cybertruck vault. It ingests ultra-spectral environment streams via ROS 2, eliminating telemetry leaks to public clouds.
