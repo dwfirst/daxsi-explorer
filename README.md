@@ -37,6 +37,27 @@ Fuses global baseline LLMs with crystal-clean physical inputs. This sovereign, d
       <td><b>Advanced Engineering</b></td>
       <td>Rare environmental anomalies and interactions</td>
       <td>Foundations for future technological paradigms</td>
+      <h3>System Architecture</h3>
+
+<pre>
+[ PHYSICAL WORLD ] ──(Raw Spectra)──> [ SENSORY COCOON ]
+                                              │
+                                       (ROS 2 Stream)
+                                              ▼
+[ HUMAN OPERATOR ] ──(Fine-Tuning)──> [ ONBOARD COMPUTE ] <──(Hybrid RAG)──> [ SPACEX STARLINK ]
+  (Driver / Mentor)                    (1TB+ VRAM Cluster)                     (Global xAI Core)
+</pre>
+
+<h4>Data Flow and Interaction Principles</h4>
+
+<ul>
+  <li><b>Sovereign In-Car Processing:</b> The 1TB+ VRAM cluster operates completely locally inside the Cybertruck vault. It processes ultra-spectral sensor streams via ROS 2, preventing data leaks to external clouds during exploration.</li>
+  <li><b>Human-in-the-Loop Fine-Tuning:</b> The operator acts as a scientific mentor, guiding the platform through environments and validating AI hypotheses in real time, which directly modifies local model weights.</li>
+  <li><b>Hybrid Starlink Transport:</b> High-bandwidth satellite uplink synchronizes heavily compressed empirical knowledge graphs with the global xAI infrastructure only when verification or global compute scaling is required.</li>
+</ul>
+
+<hr />
+
     </tr>
   </tbody>
 </table>
