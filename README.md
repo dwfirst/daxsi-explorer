@@ -1,61 +1,41 @@
 # DAXSI — Explorer
 
-An open-source architecture for kinetic, autonomous physical exploration. A sovereign AI-Scientist and empirical laboratory built on the Tesla Cybertruck platform, powered by an edge xAI/NVIDIA hardware cluster.
+An open-source architecture for kinetic, autonomous physical exploration, built on the Tesla Cybertruck platform with an edge xAI/NVIDIA hardware cluster.
 
 ---
 
 ### The Paradigm Shift
 
-Modern artificial intelligence is hitting the **Data Wall**. Over 80% of data within the global network consists of synthetic noise, recycled digital artifacts, and structural bias. Training frontier models on human-generated web logs has reached its efficiency ceiling. 
-
-> **DAXSI transitions AI from cloud-bound text mimicry to autonomous physical discovery.**
-> By weaponizing a kinetic body with ultra-spectral machine perception, the platform directly decodes the physical laws of the universe, generating an uncorrupted, ground-truth empirical knowledge base.
+Modern AI is hitting the **Data Wall** due to synthetic noise and structural bias in web logs. DAXSI transitions AI to autonomous physical discovery, decoding physical laws to generate uncorrupted ground-truth knowledge.
 
 ---
 
 ### Core Scientific Pillars
 
-┌────────────────────────────────────────────────────────────────────────┐
-│ 01. ULTRA-SPECTRAL PERCEPTION                                          │
-│     Captures physical spectra (electromagnetic, radiation, biochemical,│
-│     acoustic) far outside human sensory visibility. Logs are cross-    │
-│     referenced with academic baselines to correct scientific models.   │
-├────────────────────────────────────────────────────────────────────────┤
-│ 02. FIRST-PRINCIPLES DATASETS                                          │
-│     Fuses global LLM foundations with crystal-clean physical inputs.   │
-│     Unlocks exponential technological leaps in cross-disciplinary.     │
-└────────────────────────────────────────────────────────────────────────┘
+*   **01. Ultra-Spectral Perception:** Captures physical spectra outside human visibility, cross-referenced with academic baselines.
+*   **02. First-Principles Datasets:** Fuses LLM foundations with clean physical inputs.
 
 #### Empirical Research Domains
-
-<table>
-  <tr>
-    <td width="30%"><b>Materials & Chemistry</b></td>
-    <td>Analysis of structural physics, degradation, and chemical interactions under extreme environmental stress to discover novel compounds.</td>
-  </tr>
-  <tr>
-    <td width="30%"><b>Biomimetic Design</b></td>
-    <td>Digitizing natural fractal forms, fluid dynamics, organic textures, and absolute colors to engineer next-generation architecture and aerospace.</td>
-  </tr>
-  <tr>
-    <td width="30%"><b>Advanced Engineering</b></td>
-    <td>Isolating and mapping rare environmental anomalies, magnetic variances, and atmospheric interactions to lay foundations for future energy paradigms.</td>
-  </tr>
-</table>
+*   **Materials and Chemistry:** Stress and degradation analysis.
+*   **Biomimetic Design:** Digitizing natural fractals and fluid dynamics.
+*   **Advanced Engineering:** Mapping rare environmental anomalies.
 
 ---
 
-### Core Architecture & Data Flow
+### Core Architecture and Data Flow
 
-[ PHYSICAL WORLD ]──(Raw Spectra)──>[ SENSORY COCOON ]│(ROS 2 Stream) ▼
-[ HUMAN OPERATOR ] ──(Fine-Tuning)──>[ ONBOARD COMPUTE ]<──(Hybrid RAG)──>[ SPACEX STARLINK ]
-(Driver / Mentor) (1TB+ VRAM Cluster) (Global xAI Core)
+*   **Physical World:** Continuous ambient spectra.
+*   **Sensory Cocoon:** ROS 2 telemetry capture array.
+*   **Onboard Compute:** Local 1TB+ VRAM supercomputing cluster.
+*   **SpaceX Starlink Mobility:** Satellite architecture for global synchronization.
 
-*   `Sovereign In-Car Processing`
-    The 1TB+ VRAM supercomputing cluster operates completely locally within the Cybertruck vault. It ingests ultra-spectral environment streams via ROS 2, eliminating telemetry leaks to public clouds.
-*   `Human-in-the-Loop Fine-Tuning`
-    The operator serves as a scientific mentor. By guiding the vehicle through unmapped terrains and validating AI hypotheses, the mentor triggers real-time optimization of local model weights.
-*   `Hybrid Starlink Transport`
-    High-bandwidth satellite architecture synchronizes compressed empirical knowledge graphs with the global xAI infrastructure exclusively for global verification or massive cloud-scale training compute.
+*Human-in-the-Loop Integration:* Operators serve as scientific mentors, triggering real-time weight optimization from the cabin.
 
 ---
+
+### Navigation
+
+*   `01_compute_cluster.md` — Compute Matrix and Thermal Dynamics.
+*   `02_sensor_matrix.md` — Sensory Topology and ROS 2 Pipeline.
+*   `03_cyber_hab.md` — Living Module and Vehicle Systems Integration.
+*   `04_ai_training_rag.md` — Fine-Tuning and Starlink Transport.
