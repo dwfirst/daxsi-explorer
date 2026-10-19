@@ -1,38 +1,77 @@
-# Intellectual Property & AI Contribution Declaration
+﻿# Intellectual Property Declaration
 
 ---
 
-### 1. Ownership of Concept and Architecture
+### 1. Ownership
 
-The entire conceptual framework, technological paradigm, scientific philosophy, and systemic architecture of the **DAXSI-Explorer** project are the sole intellectual property of the original author. 
+The conceptual framework, system architecture, and methodology of the DAXSI-Explorer project are the intellectual property of the author.
 
-All core innovations—including but not limited to the shift toward kinetic first-principles empirical data harvesting, the specific multi-node VRAM distribution topology inside the Tesla Cybertruck platform, the human-in-the-loop scientific mentorship fine-tuning methodology, and the autonomous sovereign physical-world dataset positioning—originated entirely from the human author's creative intent and vision.
+This includes:
 
----
+- The kinetic first-principles data collection model.
+- The multi-node compute topology for a mobile platform.
+- The human-in-the-loop scientific mentorship methodology.
+- The sovereign physical-world dataset architecture.
 
-### 2. Declaration of AI Assistance Status
-
-This repository and its documentation were developed utilizing a Large Language Model (LLM) operating as an automated artificial intelligence assistant within a desktop browser environment (Google Chrome on Windows OS). 
-
-The status of the AI during the creation of this project is strictly defined under the following legal boundaries:
-*   **Technical Facilitator Only:** The AI acted exclusively as a technical scribe, linguistic polisher, and architectural compiler.
-*   **No Creative Authorship:** The AI did not generate the foundational ideas, strategic vectors, or philosophical premises of the DAXSI paradigm. It merely translated the human author's dense conceptual inputs, technical constraints, and direct guidance into formatted technical specifications.
-*   **Public Domain AI Output:** In accordance with current international copyright laws regarding generative technologies, the AI claims zero authorship, zero intellectual property rights, and zero commercial leverage over any text, structures, or blueprints compiled within this project.
+These elements originated from the author's design intent. They are not derived from prior published work.
 
 ---
 
-### 3. Legal Protection and Commercial Rights
+### 2. Documentation Process
 
-This declaration serves as an official notice to venture capital funds, engineering reviewers, and open-source contributors:
-*   The high-value data asset generation model and the physical-world knowledge graph ingestion pipeline detailed in these documents remain fully patentable by the human author.
-*   Any unauthorized commercial exploitation of the specific unified architecture combining kinetic EV platforms with >1TB local inference clusters for empirical scientific discovery without direct written consent from the author will be subject to intellectual property litigation.
+The documents in this repository were drafted with the assistance of a large language model used as a writing tool. The model was used for formatting, language editing, and structural organization of technical content provided by the author.
+
+The model did not originate the concept, the architecture, the research domains, or the methodology. All technical decisions, component selections, and system boundaries were made by the author.
+
+No text in this repository should be read as a claim of AI authorship. The model is a tool, not a contributor.
+
+---
+
+### 3. Licensing
+
+| Component | License |
+|---|---|
+| Documentation (this repository) | MIT License |
+| Core concept and methodology | Author's copyright |
+| Brand identity (DAXSI) | Author's copyright |
+| Third-party component names | Property of respective owners |
+
+The MIT License covers the text of this repository. It does not grant rights to the DAXSI name, the core methodology, or any patentable element of the architecture.
 
 ---
 
-### 4. Original Copyright
+### 4. Commercial Use
 
-Original Copyright © 2026 [Dwane Kimbrough]. All Rights Reserved.
+Commercial use of the documented architecture requires written permission from the author.
 
-Licensed under the permissive open-source MIT License for educational and community evaluation purposes. The underlying core concept, systemic methodology, and brand identity of DAXSI remain protected under the personal sovereign copyright of the author.
+This applies to:
+
+- Integration of the described topology into a commercial product.
+- Use of the DAXSI name in a commercial context.
+- Filing of patents based on the described methodology.
+
+Educational use, research use, and community evaluation are permitted under the MIT License without additional permission.
 
 ---
+
+### 5. Third-Party Components
+
+This repository references commercial products by name for technical clarity. No affiliation, endorsement, or partnership is implied.
+
+Referenced products include, but are not limited to:
+
+- Tesla Cybertruck and Powershare.
+- NVIDIA Jetson and RTX platforms.
+- xAI Grok.
+- SpaceX Starlink.
+- Ouster, FLIR, Specim, Cubert, LiSen, ECOPROBE, ODU, igus.
+
+All trademarks remain the property of their respective owners.
+
+---
+
+### 6. Copyright
+
+Copyright © 2026. All rights reserved.
+
+Documentation licensed under MIT. Core concept, methodology, and brand identity remain under the author's copyright.
