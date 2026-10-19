@@ -6,7 +6,7 @@ This document defines the sensor architecture of the DAXSI platform. Sensors are
 
 ### 1. Design Principle
 
-The sensor matrix is a perception system, not a collection of instruments. Each sensor is selected against four criteria.
+The Sensor Matrix is a perception system, not a collection of instruments. Each sensor is selected against four criteria.
 
 | Criterion | Requirement |
 |---|---|
@@ -87,7 +87,7 @@ All sensors are mounted on vibration-isolated platforms. See `07_isolation_enclo
 | Stage | Technology | Function |
 |---|---|---|
 | Capture | GigE Vision, GMSL2, USB 3.0 | Raw sensor streams |
-| Transport | iceoryx shared memory | Zero-copy to inference nodes |
+| Transport | iceoryx shared memory | Zero-copy to Node 02s |
 | Peripheral telemetry | ESP-NOW mesh | Low-frequency sensor data, bypasses main network |
 | Time sync | IEEE 1588 PTP | Microsecond alignment across all nodes |
 | Storage | MCAP, Parquet | Time-series and geospatial indexing |
@@ -122,3 +122,5 @@ Calibration records are stored in the empirical vault with timestamps. An uncali
 4. ESP-NOW mesh range under vehicle body obstruction requires field measurement.
 
 See `01_FEASIBILITY/open_questions.md`.
+
+

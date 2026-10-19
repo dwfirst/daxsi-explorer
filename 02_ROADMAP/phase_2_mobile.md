@@ -1,6 +1,6 @@
 ﻿# Phase 2 - Mobile Survey
 
-Duration: 9 months. Objective: validate the platform in motion. The vehicle drives, the sensor matrix collects data, the manipulator is integrated, and the portable kit is field-tested.
+Duration: 9 months. Objective: validate the platform in motion. The vehicle drives, the Sensor Matrix collects data, the manipulator is integrated, and the portable kit is field-tested.
 
 ---
 
@@ -97,3 +97,4 @@ Phase 2 is complete when:
 | Starlink link dropouts | High | Data sync gaps | Local buffering |
 | HSLDS module failure | Medium | Reduced isolation | Wire-rope fallback |
 | Portable kit overweight | High | Operator fatigue | Drop WNIR instrument |
+

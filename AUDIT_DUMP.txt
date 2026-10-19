@@ -1,0 +1,3045 @@
+﻿
+
+===== FILE: 00_ARCHITECTURE\00_system_overview.md =====
+
+# Block 0: System Overview — Data Flow, Boundaries, and Integration Points
+
+This document defines the top-level system: what enters, what leaves, which subsystems exchange what, and where the boundaries of the platform lie. It is the reference map for all other architecture documents.
+
+---
+
+### 1. System Boundaries
+
+The DAXSI platform is defined by four boundaries. Anything outside them is not part of the system.
+
+| Boundary | Defined by | Excludes |
+|---|---|---|
+| Physical | Cybertruck envelope + CyberHab pod + deployed manipulator + portable kit radius | External infrastructure, fixed base stations |
+| Compute | Node 01 + Node 02 + Node 03 | Cloud clusters, xAI data centers |
+| Data | Sensor matrix + empirical vault + knowledge graph | Open web, social media, scraped corpora |
+| Authority | Human operator in the loop | Autonomous decision without human arbitration |
+
+The platform is self-sufficient within these boundaries. It does not require continuous connectivity to function.
+
+---
+
+### 2. Data Flow
+Physical World
+│
+▼
+[Sensor Matrix] ─────────────────────────────────────┐
+optical, thermal, LiDAR, radiation, │
+chemical, acoustic, kinetic │
+│ │
+│ raw streams, timestamped via PTP │
+▼ │
+[ROS 2 Middleware] │
+iceoryx zero-copy for high-bandwidth streams │
+ESP-NOW mesh for low-frequency telemetry │
+│ │
+▼ │
+[Isolation Enclosure] │
+EMI, vibration, thermal protection │
+│ │
+▼ │
+[Compute Cluster] │
+Node 01: routing, voice, real-time control │
+Node 02: inference, vision, hypothesis generation │
+Node 03: RAG index, knowledge graph, cold storage │
+│ │
+├──► [Manipulator] ← ROS 2 action │
+├──► [Thermal Harvesting] → 48V rail │
+│ │
+▼ │
+[AI Layer] │
+Local backbone: open-weights 70B │
+Orbital validation: xAI Grok via Starlink │
+Human-in-the-Loop: operator console │
+│ │
+▼ │
+[Knowledge Graph] ── compressed ──► Starlink ──► xAI │
+│ │
+▼ │
+[Empirical Vault] ← raw logs, append-only │
+
+text
+
+---
+
+### 3. Subsystem Interfaces
+
+Each interface is a contract. It defines what is exchanged, in which format, and at what rate.
+
+| From | To | Medium | Format | Rate | Status |
+|---|---|---|---|---|---|
+| Sensor matrix | ROS 2 | GigE / GMSL2 / USB | ROS 2 messages | up to 800 MB/s | `[COTS]` |
+| ROS 2 | Node 01 | iceoryx shared memory | zero-copy frames | 10 Gbps | `[COTS]` |
+| ESP32 mesh | Gateway | ESP-NOW | serialized telemetry | < 1 kbps per node | `[COTS]` |
+| Node 01 | Node 02 | ODU optical | inference requests | 10 Gbps | `[COTS]` |
+| Node 02 | Node 03 | ODU optical | RAG queries, embeddings | 10 Gbps | `[COTS]` |
+| Node 03 | Empirical vault | NVMe over Ethernet | Parquet / MCAP | 10 Gbps | `[COTS]` |
+| Node 01 | Manipulator | ODU optical | ROS 2 actions | 1 Gbps | `[COTS]` |
+| Node 01 | Portable kit | Starlink / optical | compressed packets | 25–100 Mbps | `[COTS]` |
+| Node 02 | xAI layer | Starlink | knowledge graphs | 10–50 Mbps | `[COTS]` |
+| Powershare | PDU | 240V AC | electrical | 9.6 kW max | `[COTS]` |
+| PDU | All blocks | 48V DC shielded | electrical | 2.4 kW peak | `[COTS]` |
+
+No copper data conductor crosses an enclosure boundary. Optical links are used wherever galvanic isolation is required.
+
+---
+
+### 4. Operational States
+
+The platform operates in four states. Transitions are controlled by the operator or by autonomous logic with human override.
+
+| State | Description | Compute draw | Sensors | Manipulator | Starlink |
+|---|---|---|---|---|---|
+| **Idle** | Parked, low-power monitoring | 0.2 kW | Minimal | Stowed | Off |
+| **Static monitoring** | Stationary observation, weeks | 1.5 kW | Full | Stowed | Periodic |
+| **Mobile survey** | Driving, data collection | 2.3 kW | Full | Stowed | Off |
+| **Deployed** | Stationary, manipulator active, kit deployed | 2.3 kW | Full | Active | On |
+
+State transitions are logged with timestamps and operator ID.
+
+---
+
+### 5. Failure Modes and Degradation
+
+The platform is designed to degrade, not to fail abruptly.
+
+| Failure | Effect | Mitigation | Status |
+|---|---|---|---|
+| Node 02 loss | Inference degraded | Fall back to Node 01 backbone (smaller model) | `[COTS]` |
+| Node 03 loss | RAG unavailable | Local cache on Node 02 continues | `[COTS]` |
+| Starlink loss | No orbital validation | Full local autonomy continues | `[COTS]` |
+| Sensor loss | Partial perception | Redundant coverage from overlapping sensors | `[COTS]` |
+| Coolant leak | Thermal throttling | Automatic derating, operator alert | `[COTS]` |
+| Powershare loss | Battery-only operation | Static monitoring continues at 1.5 kW | `[COTS]` |
+| HSLDS failure | Reduced vibration isolation | Wire-rope isolators remain functional | `[PROTO]` |
+
+No single failure removes the platform's ability to collect data and preserve it locally.
+
+---
+
+### 6. Integration Points
+
+The platform is designed to integrate with external systems without depending on them.
+
+| External system | Integration | Dependency |
+|---|---|---|
+| xAI Grok | API over Starlink | Optional |
+| Tesla Powershare | 240V AC outlet | Required for continuous operation |
+| Starlink constellation | Satellite link | Optional |
+| Academic baselines | Pre-loaded knowledge graph | Required, pre-loaded |
+| Operator | Voice, console, portable kit | Required |
+
+The platform is functional without xAI and without Starlink. It is not functional without an operator.
+
+---
+
+### 7. Document Map
+
+| Document | Scope |
+|---|---|
+| `01_compute_cluster.md` | Node topology, hardware, expansion path |
+| `02_sensor_matrix.md` | Sensor selection by physical field |
+| `03_cyber_hab.md` | Habitation pod, ECLSS, dry architecture |
+| `04_ai_training_rag.md` | Model hierarchy, RAG tiers, fine-tuning |
+| `05_manipulator.md` | Retractable arm, stowage, control |
+| `06_portable_kit.md` | Handheld suite, field link |
+| `07_isolation_enclosure.md` | Enclosure layers, EMI, vibration |
+
+
+
+===== FILE: 00_ARCHITECTURE\01_compute_cluster.md =====
+
+# Block 1: Compute Cluster — Node Topology, Hardware, and Expansion Path
+
+This document defines the compute architecture of the DAXSI platform. It replaces the previous fixed-VRAM specification with a block-scalable topology: a validated baseline that can be expanded through defined nodes without redesigning the system.
+
+---
+
+### 1. Design Principle
+
+The cluster is organized by function, not by capacity. Each node has a distinct role, a distinct failure mode, and a distinct expansion path. Capacity is a consequence of the topology, not a target.
+
+| Principle | Implementation |
+|---|---|
+| Functional separation | Command, inference, and storage are separate nodes |
+| Fail-degraded | Loss of any node degrades capability, does not stop operation |
+| Block-scalable | Each node can be expanded independently |
+| Galvanic isolation | Optical links between nodes |
+| Thermal isolation | Each node has its own coolant loop segment |
+
+---
+
+### 2. Baseline Topology
+
+| Node | Role | Hardware | VRAM | Power (peak) | Status |
+|---|---|---|---|---|---|
+| 01 | Command Core | 2× Jetson AGX Orin 64GB | 128 GB | 0.12 kW | `[COTS]` |
+| 02 | Inference Primary | 4× RTX 6000 Ada 48GB | 192 GB | 1.2 kW | `[COTS]` |
+| 03 | RAG / Storage | 8× Jetson Orin NX 16GB | 128 GB | 0.16 kW | `[COTS]` |
+| **Baseline total** | | | **448 GB** | **1.48 kW** | |
+
+The baseline is fully COTS. Every component is available today.
+
+---
+
+### 3. Node Roles
+
+#### Node 01 — Command Core
+
+| Parameter | Value |
+|---|---|
+| Location | Front cabin console, isolated enclosure |
+| Hardware | 2× Jetson AGX Orin 64GB |
+| VRAM | 128 GB |
+| Role | Operator interface, voice pipeline, real-time routing, manipulator control |
+| Operating model | Whisper Large v3 + 9B-class local model, FP16/INT8 |
+| Latency target | < 300 ms voice round-trip |
+
+Node 01 is the only node that directly faces the operator. It does not run heavy inference. Its job is to route, translate, and control.
+
+#### Node 02 — Inference Primary
+
+| Parameter | Value |
+|---|---|
+| Location | CyberHab lower equipment deck, isolated enclosure |
+| Hardware | 4× RTX 6000 Ada 48GB, PCIe cluster |
+| VRAM | 192 GB |
+| Role | Heavy local LLM execution, vision processing, hypothesis generation |
+| Operating model | Open-weights 70B, 4-bit AWQ |
+| Latency target | < 2 s for 1k-token generation |
+
+Node 02 is the primary reasoning engine. It runs the local backbone model and the multi-spectral vision pipeline.
+
+#### Node 03 — RAG and Storage
+
+| Parameter | Value |
+|---|---|
+| Location | CyberHab shock-isolated vertical rack |
+| Hardware | 8× Jetson Orin NX 16GB |
+| VRAM | 128 GB |
+| Role | Vector embedding, knowledge graph indexing, cold storage write-heads |
+| Operating model | Milvus or Qdrant, distributed across 8 nodes |
+| Index target | Pre-loaded academic baseline + field logs |
+
+Node 03 is the memory of the platform. It does not generate; it retrieves and indexes.
+
+---
+
+### 4. Expansion Path
+
+The baseline is not the ceiling. Each node has a defined expansion path.
+
+| Stage | Node 02 | Node 03 | Total VRAM | Status |
+|---|---|---|---|---|
+| Baseline | 4× RTX 6000 Ada (192 GB) | 8× Orin NX (128 GB) | 448 GB | `[COTS]` |
+| Stage 1 | 8× RTX 6000 Ada (384 GB) | 8× Orin NX (128 GB) | 640 GB | `[COTS]` |
+| Stage 2 | 8× RTX 6000 Ada (384 GB) | 4× L40S (192 GB) | 704 GB | `[COTS]` |
+| Stage 3 | External dock | External dock | ~1 TB | `[CONCEPT]` |
+
+Stage 1 requires a second PCIe chassis in the Vault. Stage 2 replaces the Jetson array with L40S cards. Stage 3 is a trailer or static dock and is not part of the vehicle envelope.
+
+The hard ceiling is not VRAM availability. It is the Cybertruck Powershare power and thermal envelope. At 9.6 kW continuous, the platform cannot sustain more than approximately 2.5 kW of compute without exceeding headroom for cooling and ECLSS.
+
+---
+
+### 5. Inter-Node Links
+
+| Link | Medium | Bandwidth | Purpose |
+|---|---|---|---|
+| Node 01 ↔ Node 02 | ODU optical | 10 Gbps | Inference requests, vision frames |
+| Node 02 ↔ Node 03 | ODU optical | 10 Gbps | RAG queries, embeddings |
+| Node 03 ↔ Vault NVMe | Ethernet | 10 Gbps | Raw log write |
+| Node 01 ↔ Manipulator | ODU optical | 1 Gbps | ROS 2 actions |
+| Node 01 ↔ Portable kit | Starlink or optical | 25–100 Mbps | Field data |
+
+No copper data conductor crosses an enclosure boundary. See `07_isolation_enclosure.md`.
+
+---
+
+### 6. Software Stack
+
+| Layer | Component | Status |
+|---|---|---|
+| OS | Ubuntu 22.04 LTS with real-time kernel | `[COTS]` |
+| Middleware | ROS 2 Humble, iceoryx | `[COTS]` |
+| Inference | vLLM, TensorRT-LLM | `[COTS]` |
+| Quantization | AWQ 4-bit, GPTQ | `[COTS]` |
+| Vision | YOLOv11 multi-spectral, custom heads | `[COTS]` |
+| Vector DB | Milvus or Qdrant | `[COTS]` |
+| Fine-tuning | PEFT, LoRA, QLoRA | `[COTS]` |
+| Orchestration | systemd units, ROS 2 launch | `[COTS]` |
+
+---
+
+### 7. Power Budget by Node
+
+| Node | Peak | Average | Notes |
+|---|---|---|---|
+| Node 01 | 0.12 kW | 0.08 kW | Continuous |
+| Node 02 | 1.2 kW | 0.8 kW | Burst on inference |
+| Node 03 | 0.16 kW | 0.12 kW | Continuous |
+| Cooling (shared) | 0.3 kW | 0.15 kW | Variable |
+| **Cluster total** | **1.78 kW** | **1.15 kW** | Within 9.6 kW envelope |
+
+The cluster leaves approximately 7.8 kW of headroom at peak for ECLSS, sensors, and charging. This headroom is the real constraint on expansion, not VRAM.
+
+---
+
+### 8. Open Questions
+
+1. Second PCIe chassis for Stage 1 requires structural modification of the Vault. Not yet designed.
+2. L40S thermal profile in a sealed enclosure at 40 °C ambient is not validated.
+3. Milvus/Qdrant index size for full academic baseline on 128 GB VRAM requires measurement.
+4. Real-time kernel latency under full sensor load requires bench validation.
+
+See `01_FEASIBILITY/open_questions.md`.
+
+
+
+===== FILE: 00_ARCHITECTURE\02_sensor_matrix.md =====
+
+# Block 2: Sensor Matrix — Full-Spectrum Perception by Physical Field
+
+This document defines the sensor architecture of the DAXSI platform. Sensors are organized by physical field, not by device list. Each field maps to the best available COTS instrument for a moving platform, with explicit selection rationale.
+
+---
+
+### 1. Design Principle
+
+The sensor matrix is a perception system, not a collection of instruments. Each sensor is selected against four criteria.
+
+| Criterion | Requirement |
+|---|---|
+| Spectral coverage | Fills a gap not covered by another sensor |
+| Motion tolerance | Operates under vehicle vibration and motion |
+| Environmental rating | IP67 or better, −40 °C to +85 °C |
+| Interface | GigE, GMSL2, USB 3.0, or UART with ROS 2 driver |
+
+Pushbroom hyperspectral instruments are excluded from the mobile platform. They require stable motion and produce distortion under vibration. Snapshot instruments are preferred wherever the spectral range permits.
+
+---
+
+### 2. Physical Field Map
+
+| Field | Sub-range | Sensor | Weight | Interface | Status |
+|---|---|---|---|---|---|
+| EM — optical | UV–VIS 350–1000 nm | Cubert ULTRIS X20 | 350 g | GigE | `[COTS]` |
+| EM — optical | VNIR 400–1000 nm | Specim AFX10 | 2.4 kg | GigE | `[COTS]` |
+| EM — optical | SWIR 900–1700 nm | ATH1700-17 | 1.1 kg | GigE | `[COTS]` |
+| EM — optical | SWIR ext. 960–2500 nm | Specim SX25 | 4.0 kg | GigE | `[COTS]` |
+| EM — thermal | LWIR 7.7–12.3 µm | FLIR Boson 640 | 7.5 g | GMSL2 / USB | `[COTS]` |
+| EM — ranging | 905 / 1550 nm | Ouster OS1-128 | 950 g | Ethernet UDP | `[COTS]` |
+| EM — ionizing | gamma / beta | SBM-20 Geiger | 40 g | UART | `[COTS]` |
+| EM — magnetic | 3-axis | Fluxgate magnetometer | 80 g | I2C / UART | `[COTS]` |
+| Chemical | VOC, CO2, CH4, NOx | Bosch BME680 + NDIR + electrochemical cells | 30 g | I2C / UART | `[COTS]` |
+| Acoustic | audible + infrasound | ReSpeaker Mic Array v2.0 | 120 g | USB Audio | `[COTS]` |
+| Kinetic | 9-DOF | Bosch BNO055 | 5 g | I2C | `[COTS]` |
+
+---
+
+### 3. Selection Rationale
+
+#### Optical — Hyperspectral
+
+| Instrument | Type | Rationale |
+|---|---|---|
+| Cubert ULTRIS X20 | Snapshot | 164 channels, 350–1000 nm, no moving parts, tolerant to vibration |
+| Specim AFX10 | Pushbroom | Fixed-wing baseline reference, not for mobile use |
+| ATH1700-17 | Snapshot | 25 fps, 100 channels, 900–1700 nm, direct mineral and moisture discrimination |
+| Specim SX25 | Pushbroom | 960–2500 nm, 392 channels, full chemical signature, static deployment only |
+
+The mobile platform carries ULTRIS X20 and ATH1700-17 as primary hyperspectral instruments. AFX10 and SX25 are ground-truth references, deployed from the portable kit or static station.
+
+#### Optical — Thermal
+
+FLIR Boson 640 is selected over larger LWIR instruments because of its 7.5 g mass, 640×512 resolution, and GMSL2 interface. A larger LWIR hyperspectral instrument (Specim AisaOWL, 13.1 kg) is excluded from the mobile platform and reserved for static deployment.
+
+#### Ranging
+
+Ouster OS1-128 provides 200 m range, 5.2M points/s, IP68/69K rating, and −40 °C operation. It is the only LiDAR in the selection that meets all four criteria without modification.
+
+#### Chemical
+
+The chemical suite is layered: BME680 for general air quality, NDIR for CO2 and CH4, electrochemical cells for specific gases. No single sensor covers the full chemical field.
+
+#### Acoustic
+
+ReSpeaker Mic Array v2.0 provides 4-microphone spatial audio with USB Audio Class interface. Infrasound coverage is limited to 20 Hz; sub-20 Hz detection requires a dedicated geophone, which is not in the baseline.
+
+---
+
+### 4. Spatial Placement
+
+| Location | Sensors | Rationale |
+|---|---|---|
+| Roof ridge platform | LiDAR, LWIR, panoramic VIS, weather station | Above aerodynamic and thermal boundary layer |
+| A-pillars and side sails | UV/VIS matrices, side LiDAR | Zero blind spots for volumetric mapping |
+| Vault tailgate edge | Ground-facing stereo, Geiger tube | Terrain tracking, radiation isolated from cabin electronics |
+| Underbody (protected) | IMU, magnetometer | Chassis reference, magnetic field measurement |
+| Portable kit | Handheld spectroradiometer, gas analyzer | Locations inaccessible to the vehicle |
+
+All sensors are mounted on vibration-isolated platforms. See `07_isolation_enclosure.md`.
+
+---
+
+### 5. Data Ingestion Pipeline
+
+| Stage | Technology | Function |
+|---|---|---|
+| Capture | GigE Vision, GMSL2, USB 3.0 | Raw sensor streams |
+| Transport | iceoryx shared memory | Zero-copy to inference nodes |
+| Peripheral telemetry | ESP-NOW mesh | Low-frequency sensor data, bypasses main network |
+| Time sync | IEEE 1588 PTP | Microsecond alignment across all nodes |
+| Storage | MCAP, Parquet | Time-series and geospatial indexing |
+| Ground truth | RTK-GPS + IMU | Every record tagged with position and orientation |
+
+Time synchronization is the foundation of the pipeline. A gas surge, an optical frame, and a LiDAR return must be aligned to the same timestamp before they can be correlated.
+
+---
+
+### 6. Calibration and Ground Truth
+
+Every sensor requires calibration against a known reference before field deployment.
+
+| Sensor | Calibration method | Frequency |
+|---|---|---|
+| Hyperspectral | Spectralon reference panel | Before each mission |
+| Thermal | Blackbody reference | Monthly |
+| LiDAR | Surveyed targets | Before each mission |
+| Gas | Certified gas mixtures | Monthly |
+| Radiation | Known source | Annually |
+| IMU | Static and dynamic bench | Before each mission |
+
+Calibration records are stored in the empirical vault with timestamps. An uncalibrated sensor is excluded from the dataset.
+
+---
+
+### 7. Open Questions
+
+1. SWIR snapshot sensor (ATH1700-17) field reliability under vibration is not validated.
+2. Infrasound coverage below 20 Hz requires a geophone not in the baseline.
+3. Hyperspectral data volume (up to 800 MB/s) requires real-time compression strategy not yet defined.
+4. ESP-NOW mesh range under vehicle body obstruction requires field measurement.
+
+See `01_FEASIBILITY/open_questions.md`.
+
+
+
+===== FILE: 00_ARCHITECTURE\03_cyber_hab.md =====
+
+# Block 3: CyberHab — Expedition Pod, Dry Architecture, and ECLSS
+
+This document defines the habitation and equipment pod mounted on the Cybertruck Vault. The architecture is dry: no water mass is carried. All life-support and climate systems operate without liquid storage.
+
+---
+
+### 1. Structural Integration
+
+| Parameter | Value | Status |
+|---|---|---|
+| Mounting | Cybertruck Vault OEM utility rails | `[COTS]` |
+| Shell material | Carbon fiber sandwich panel | `[COTS]` |
+| Insulation | R-14, zero thermal bridge | `[COTS]` |
+| Exterior finish | Matte graphite | `[COTS]` |
+| Windows | None (equipment and habitation volume) | `[COTS]` |
+| Sealing | IP67 | `[COTS]` |
+
+The pod is un-windowed by design. The operator observes through the vehicle cabin and through sensor feeds, not through pod glass.
+
+---
+
+### 2. Mass and Center of Gravity
+
+Heavy elements are placed flat against the bed floor, between the axles. Light elements occupy the upper volume.
+
+| Element | Mass (est.) | Position | Status |
+|---|---|---|---|
+| Node 02 rack | 45 kg | Bed floor, center | `[COTS]` |
+| Node 03 rack | 30 kg | Bed floor, center | `[COTS]` |
+| Coolant reservoir | 12 kg | Bed floor, rear | `[COTS]` |
+| PCM buffer | 25 kg | Bed floor, center | `[COTS]` |
+| Sleeping platform | 15 kg | Upper, side-folding | `[COTS]` |
+| ECLSS unit | 18 kg | Upper, rear | `[COTS]` |
+| Manipulator bay | 20 kg | Under-bed, sealed | `[COTS]` |
+| **Total pod mass** | **~165 kg** | | |
+
+Center of gravity is maintained below the bed rail line. No water tank is carried. See Section 5.
+
+---
+
+### 3. Habitation Matrix
+
+| Zone | Function | Status |
+|---|---|---|
+| Research and command | Retractable desk, 14-inch operator display, diagnostics panel | `[COTS]` |
+| Sleeping | Folding memory-foam platform, vertical stow | `[COTS]` |
+| Wet block | Dry composting lavatory, positive-pressure ventilation | `[COTS]` |
+| Storage | Modular bins, shock-isolated | `[COTS]` |
+
+The wet block is a dry system. It uses a composting toilet with positive-pressure ventilation and a HEPA exhaust filter. No water is used for sanitation. No greywater is generated.
+
+---
+
+### 4. Energy Lifecycle
+
+| Source | Capacity | Status |
+|---|---|---|
+| Cybertruck traction battery via Powershare | 9.6 kW continuous | `[COTS]` |
+| Roof solar array | 1.2 kW peak | `[COTS]` |
+| MPPT charge controller | 48V output | `[COTS]` |
+| PCM thermal buffer | 25 kg phase-change material | `[COTS]` |
+| STC thermal harvester | Low-grade waste heat to 48V | `[PROTO]` |
+
+The pod does not carry a dedicated generator. All power comes from the vehicle traction battery, the solar array, and thermal harvesting.
+
+---
+
+### 5. Dry Architecture — Removed Systems
+
+The following systems are removed from the architecture. They are not present in any phase.
+
+| Removed system | Reason |
+|---|---|
+| 60 L freshwater tank | Mass, freezing risk, contamination risk |
+| UV-C inline sterilizer | Requires water loop |
+| Induction shower | Requires water supply and greywater handling |
+| Greywater tank | Consequence of shower |
+| Water heater | Consequence of shower |
+
+Sanitation is dry composting. Operator hygiene is managed with dry wipes and external facilities where available. The pod is not designed for indefinite closed-loop habitation; it is designed for multi-week field deployment with periodic resupply.
+
+---
+
+### 6. ECLSS — Environmental Control and Life Support
+
+| Subsystem | Specification | Status |
+|---|---|---|
+| Particulate filtration | HEPA H14 | `[COTS]` |
+| Chemical filtration | Activated charcoal matrix | `[COTS]` |
+| Cabin pressure | Slight positive pressure | `[COTS]` |
+| Climate control | 48V variable-speed heat pump | `[COTS]` |
+| Heat recycling | Node 02 waste heat to cabin via liquid-to-air exchanger | `[COTS]` |
+| CO2 monitoring | NDIR sensor, linked to ECLSS | `[COTS]` |
+| VOC monitoring | BME680, linked to ECLSS | `[COTS]` |
+
+Positive cabin pressure repels external dust, soot, and radioactive particulate. The HEPA and charcoal stages are sized for continuous operation during static monitoring.
+
+---
+
+### 7. Thermal Integration
+
+The pod has three thermal paths.
+
+| Path | Source | Destination | Status |
+|---|---|---|---|
+| Liquid loop A | Node 02 RTX cluster | Roof radiator behind solar array | `[COTS]` |
+| Liquid loop B | Node 01 command core | Chassis-contact cooling blocks | `[COTS]` |
+| PCM buffer | Node 02 waste heat | Cabin heating during cold cycles | `[COTS]` |
+
+Loop A rejects heat to the roof radiator. Loop B rejects heat to the chassis structural mass during cold-weather operation. The PCM buffer stores excess heat during operation and releases it during cold static periods.
+
+See `01_FEASIBILITY/thermal_budget.md` for calculation details.
+
+---
+
+### 8. Manipulator Bay
+
+| Parameter | Value | Status |
+|---|---|---|
+| Location | Under-bed, sealed, forward of rear axle | `[COTS]` |
+| Sealing | IP67 | `[COTS]` |
+| Deployment | Linear actuator, ROS 2 action | `[COTS]` |
+| Stowed lock | Two-point mechanical, damping inserts | `[COTS]` |
+| Access | Rear-facing hatch | `[COTS]` |
+
+The bay is isolated from the habitation volume. The manipulator is deployed only in the Deployed operational state.
+
+---
+
+### 9. Open Questions
+
+1. Dry composting lavatory performance over multi-week deployment requires field validation.
+2. PCM buffer sizing for sub-zero static monitoring requires thermal simulation.
+3. Pod mass estimate requires confirmation after hardware selection.
+4. Positive-pressure ECLSS power draw at −30 °C ambient requires measurement.
+
+See `01_FEASIBILITY/open_questions.md`.
+
+
+
+===== FILE: 00_ARCHITECTURE\04_ai_training_rag.md =====
+
+# Block 4: AI Layer — Local Backbone, Orbital Validation, and Human-in-the-Loop
+
+This document defines the AI architecture of the DAXSI platform. The layer is split into three tiers with distinct roles: local inference, orbital validation, and human arbitration. No tier is optional except the orbital one.
+
+---
+
+### 1. Design Principle
+
+The AI layer is model-agnostic at the edge and xAI-aligned at the orbit. This is a deliberate split.
+
+| Tier | Location | Role | Dependency |
+|---|---|---|---|
+| Local backbone | Node 02, Node 01 | Inference, vision, routing | None |
+| Orbital validation | xAI Grok via Starlink | Cross-check, enrichment, weight updates | Starlink link |
+| Human-in-the-Loop | Operator console | Arbitration, annotation, training trigger | Operator |
+
+The platform is functional without the orbital tier. It is not functional without the human tier.
+
+---
+
+### 2. Local Backbone
+
+| Parameter | Value | Status |
+|---|---|---|
+| Model class | Open-weights 70B | `[COTS]` |
+| Quantization | 4-bit AWQ | `[COTS]` |
+| Execution platform | Node 02, 4× RTX 6000 Ada | `[COTS]` |
+| Inference engine | vLLM, TensorRT-LLM | `[COTS]` |
+| Latency target | < 2 s for 1k-token generation | `[COTS]` |
+| Model identity | Model-agnostic; any open-weights checkpoint | `[COTS]` |
+
+The local backbone is not tied to a specific model family. The checkpoint is a configuration parameter, not an architectural commitment. This allows substitution as open-weights models improve.
+
+#### Command-tier model
+
+| Parameter | Value | Status |
+|---|---|---|
+| Role | Voice, routing, fast context | `[COTS]` |
+| Hardware | Node 01, 2× Jetson AGX Orin | `[COTS]` |
+| Model class | 9B, FP16/INT8 | `[COTS]` |
+| Voice pipeline | Whisper Large v3 | `[COTS]` |
+| Latency target | < 300 ms round-trip | `[COTS]` |
+
+---
+
+### 3. Orbital Validation Layer
+
+| Parameter | Value | Status |
+|---|---|---|
+| Provider | xAI Grok | `[COTS]` |
+| Transport | Starlink Mobility | `[COTS]` |
+| Payload | Compressed knowledge graphs, not raw data | `[COTS]` |
+| Direction | Bidirectional | `[COTS]` |
+| Frequency | Periodic, operator-triggered or scheduled | `[COTS]` |
+
+The orbital layer does not receive raw sensor data. It receives compressed, structured knowledge graphs: mathematical representations of what was detected and how it was interpreted. This preserves bandwidth and keeps raw empirical data local.
+
+The orbital layer returns validated graphs and, optionally, adapter weights. It does not return base model weights.
+
+---
+
+### 4. Human-in-the-Loop Pipeline
+
+The operator is not a user. The operator is the scientific mentor.
+
+| Stage | Action | Trigger |
+|---|---|---|
+| Detection | Vision core flags anomaly | YOLOv11 multi-spectral |
+| Alert | Operator notified on console | Anomaly score threshold |
+| Validation | Operator tags, corrects, annotates | Voice or console |
+| Storage | Validated log written to empirical vault | Confirmation |
+| Training | LoRA/QLoRA on validated logs | Static state or overnight |
+| Deployment | Adapter weights loaded into backbone | After validation |
+
+The operator's corrections are the ground truth. The model does not self-validate.
+
+---
+
+### 5. Cascading RAG Architecture
+
+The knowledge base is fully local. It has three tiers.
+
+| Tier | Location | Content | Latency |
+|---|---|---|---|
+| 1 | Node 02 VRAM partition | Active session embeddings (current 50 km radius) | Microseconds |
+| 2 | Node 03 Jetson array | Pre-loaded academic baseline (physics, chemistry, materials, geology, biomimetics) | Milliseconds |
+| 3 | Empirical vault NVMe | Raw sensor logs, append-only | Seconds |
+
+Tier 1 is ephemeral. Tier 2 is the sovereign knowledge graph. Tier 3 is the immutable record.
+
+The vector database runs on Node 03 using Milvus or Qdrant. Index size for the full academic baseline on 128 GB VRAM is an open question. See `01_FEASIBILITY/open_questions.md`.
+
+---
+
+### 6. Fine-Tuning Pipeline
+
+| Parameter | Value | Status |
+|---|---|---|
+| Method | LoRA / QLoRA | `[COTS]` |
+| Trigger | Static monitoring state or overnight charging | `[COTS]` |
+| Data source | Validated operator logs only | `[COTS]` |
+| Base weights | Frozen | `[COTS]` |
+| Adapter storage | Empirical vault, versioned | `[COTS]` |
+| Rollback | Previous adapter preserved | `[COTS]` |
+
+Fine-tuning never modifies base model weights. Adapters are versioned and can be rolled back. An adapter that degrades performance on a held-out validation set is rejected.
+
+---
+
+### 7. Failure and Degradation
+
+| Failure | Effect | Mitigation |
+|---|---|---|
+| Node 02 loss | Heavy inference unavailable | Node 01 command model continues |
+| Starlink loss | No orbital validation | Local autonomy continues |
+| Node 03 loss | RAG unavailable | Tier 1 cache continues |
+| Operator unavailable | No arbitration | Platform enters Idle state |
+| Adapter corruption | Degraded model | Rollback to previous adapter |
+
+The AI layer degrades gracefully. It does not fail closed.
+
+---
+
+### 8. Open Questions
+
+1. Index size for full academic baseline on 128 GB VRAM requires measurement.
+2. LoRA fine-tuning on validated logs during static monitoring requires power budget validation.
+3. Knowledge graph compression ratio for Starlink uplink requires field measurement.
+4. Operator annotation throughput under field conditions is unknown.
+
+See `01_FEASIBILITY/open_questions.md`.
+
+
+
+===== FILE: 00_ARCHITECTURE\05_manipulator.md =====
+
+# Block 5: Manipulator — Retractable Arm, Stowage, and Control
+
+This document defines the robotic manipulator of the DAXSI platform. The arm is stowed in a sealed bay under the Vault and deployed only in the Deployed operational state. It is a tool for sample handling, sensor placement, and physical interaction with terrain the vehicle cannot reach.
+
+---
+
+### 1. Design Principle
+
+The manipulator is a retractable subsystem, not a permanent protrusion. It is designed to be invisible to the vehicle's aerodynamics and ground clearance when stowed.
+
+| Principle | Implementation |
+|---|---|
+| Stowed invisibility | Sealed bay under Vault, no external protrusion |
+| Deployment on demand | Linear actuator, ROS 2 action |
+| Vibration tolerance | Two-point mechanical lock, damping inserts |
+| Galvanic isolation | Optical control link |
+| Fail-safe | Mechanical lock releases only under power |
+
+---
+
+### 2. Arm Specification
+
+| Parameter | Value | Status |
+|---|---|---|
+| Degrees of freedom | 6 | `[COTS]` |
+| Reach | 0.8–1.0 m | `[COTS]` |
+| Payload | 3 kg | `[COTS]` |
+| Repeatability | ± 0.1 mm | `[COTS]` |
+| Mass | 4.5 kg | `[COTS]` |
+| Control interface | ROS 2 action | `[COTS]` |
+| End effector | Interchangeable gripper / sensor mount | `[COTS]` |
+
+The arm class is represented by the igus ReBeL 6DOF or an equivalent COTS manipulator. The specific model is a configuration parameter, not an architectural commitment.
+
+---
+
+### 3. Stowage Bay
+
+| Parameter | Value | Status |
+|---|---|---|
+| Location | Under-bed, forward of rear axle | `[COTS]` |
+| Sealing | IP67 | `[COTS]` |
+| Deployment | Linear actuator, rear-facing hatch | `[COTS]` |
+| Lock | Two-point mechanical, power-released | `[COTS]` |
+| Damping | Elastomeric inserts, tuned to 5–50 Hz | `[COTS]` |
+| Access | Service hatch from Vault floor | `[COTS]` |
+
+The bay is isolated from the habitation volume. The arm is deployed only when the vehicle is stationary and the operator has confirmed the Deployed state.
+
+---
+
+### 4. Deployment Sequence
+
+| Step | Action | Control |
+|---|---|---|
+| 1 | Vehicle stationary, parking brake engaged | Operator |
+| 2 | Deployed state confirmed on console | Operator |
+| 3 | Hatch opens, linear actuator extends | ROS 2 action |
+| 4 | Arm unfolds, self-check | ROS 2 action |
+| 5 | End effector selected | Operator or autonomous |
+| 6 | Task execution | ROS 2 action |
+| 7 | Arm folds, actuator retracts | ROS 2 action |
+| 8 | Hatch closes, lock engages | ROS 2 action |
+
+The sequence is reversible at any step. Abort returns the arm to stowed position.
+
+---
+
+### 5. Control Architecture
+
+| Layer | Component | Status |
+|---|---|---|
+| High-level | ROS 2 action server on Node 01 | `[COTS]` |
+| Motion planning | MoveIt 2 | `[COTS]` |
+| Low-level | Joint trajectory controller | `[COTS]` |
+| Feedback | Joint encoders, force/torque sensor | `[COTS]` |
+| Safety | Workspace limits, collision detection | `[COTS]` |
+| Link | Optical, ODU Expanded Beam | `[COTS]` |
+
+The arm is controlled from Node 01, not Node 02. This keeps control latency low and isolates the arm from heavy inference load.
+
+---
+
+### 6. Use Cases
+
+| Use case | End effector | Status |
+|---|---|---|
+| Sample collection | Gripper | `[COTS]` |
+| Sensor placement | Sensor mount | `[COTS]` |
+| Surface inspection | Camera mount | `[COTS]` |
+| Terrain probing | Probe tip | `[COTS]` |
+| Object retrieval | Gripper | `[COTS]` |
+
+The arm is not designed for heavy lifting or excavation. It is designed for precise interaction with small objects and sensor placement in locations the vehicle cannot reach.
+
+---
+
+### 7. Vibration Load During Stowed Travel
+
+The stowed arm is subjected to off-road vibration. This is the primary open question.
+
+| Concern | Mitigation | Status |
+|---|---|---|
+| Joint bearing wear | Two-point mechanical lock | `[COTS]` |
+| Connector fatigue | Damping inserts, strain relief | `[COTS]` |
+| Hatch seal degradation | IP67 seal, periodic inspection | `[COTS]` |
+| Long-term alignment drift | Calibration procedure required | `[PROTO]` |
+
+Field validation of stowed vibration tolerance is required before Phase 2 deployment.
+
+---
+
+### 8. Open Questions
+
+1. Stowed vibration tolerance under sustained off-road motion is not validated.
+2. End effector swap mechanism requires field-replaceable design not yet specified.
+3. Arm reach vs. vehicle geometry requires CAD integration study.
+4. Power draw during deployment and task execution requires measurement.
+
+See `01_FEASIBILITY/open_questions.md`.
+
+
+
+===== FILE: 00_ARCHITECTURE\06_portable_kit.md =====
+
+# Block 6: Portable Kit — Handheld Measurement Suite and Field Link
+
+This document defines the portable measurement kit carried by the operator into locations the vehicle cannot reach. The kit is a thin client: it collects, compresses, and transmits to Node 02 or to the orbital layer. It does not run heavy AI locally.
+
+---
+
+### 1. Design Principle
+
+The kit extends the sensor matrix beyond the vehicle envelope without duplicating the compute cluster.
+
+| Principle | Implementation |
+|---|---|
+| Thin client | Collection and compression only; no local inference |
+| Field link | Starlink Mini or optical tether to Node 01 |
+| Low mass | Total kit mass under 8 kg |
+| Battery life | 8 hours continuous, 24 hours intermittent |
+| Environmental rating | IP67, −20 °C to +50 °C |
+
+The kit is not a second laboratory. It is a remote probe with a human carrier.
+
+---
+
+### 2. Kit Composition
+
+| Component | Function | Mass | Status |
+|---|---|---|---|
+| LiSen iSpecField-HH | Spectroradiometer, 200–1100 nm | 1.8 kg | `[COTS]` |
+| LiSen iSpecField-WNIR-HH | Spectroradiometer, 350–2500 nm | 2.0 kg | `[COTS]` |
+| ECOPROBE 5 | PID + IR gas analyzer, VOC/CH4/CO2 | 3.0 kg | `[COTS]` |
+| Starlink Mini | Satellite link, 25–40 W | 1.16 kg | `[COTS]` |
+| Tablet | ROS 2 client, compressed uplink | 0.6 kg | `[COTS]` |
+| Battery pack | 48V, 300 Wh | 1.5 kg | `[COTS]` |
+| **Total** | | **~10 kg** | |
+
+Total mass slightly exceeds the 8 kg target. The WNIR instrument is the heaviest single item and can be omitted for missions that do not require 2500 nm coverage.
+
+---
+
+### 3. Field Link Architecture
+
+| Link | Medium | Bandwidth | Range | Status |
+|---|---|---|---|---|
+| Primary | Starlink Mini | 25–100 Mbps | Global (sky view required) | `[COTS]` |
+| Secondary | Optical tether | 10 Gbps | 100 m | `[COTS]` |
+| Tertiary | Wi-Fi 6 | 100 Mbps | 500 m line-of-sight | `[COTS]` |
+
+The kit does not depend on a single link. If Starlink is obstructed, the optical tether connects to the vehicle. If the vehicle is out of range, Wi-Fi covers the gap.
+
+---
+
+### 4. Data Flow
+Operator in field
+│
+▼
+[Handheld instruments]
+│ raw data, local storage
+▼
+[Tablet]
+│ compression, metadata tagging
+▼
+[Link: Starlink / optical / Wi-Fi]
+│
+▼
+[Node 01] ──► [Node 02] ──► [Node 03]
+│
+▼
+[Knowledge graph update]
+│
+▼
+[Operator feedback on tablet]
+
+text
+
+The kit receives back annotations, hypotheses, and next-step guidance from Node 02. This closes the loop between field collection and onboard inference.
+
+---
+
+### 5. Compression Strategy
+
+Raw hyperspectral and gas data are too large for satellite uplink. The kit compresses before transmission.
+
+| Data type | Compression | Ratio | Status |
+|---|---|---|---|
+| Hyperspectral cube | PCA + quantization | 20:1 | `[COTS]` |
+| Gas time series | Delta encoding | 10:1 | `[COTS]` |
+| Spectra | Downsample + metadata | 50:1 | `[COTS]` |
+| Images | JPEG XL | 5:1 | `[COTS]` |
+
+Compression is lossy for transmission and lossless for local storage. The kit retains the full raw dataset on internal storage until it is physically returned to the vehicle.
+
+---
+
+### 6. Operational Modes
+
+| Mode | Description | Link | Power |
+|---|---|---|---|
+| Tethered | Operator within 100 m of vehicle | Optical | 15 W |
+| Local | Operator within Wi-Fi range | Wi-Fi 6 | 20 W |
+| Remote | Operator beyond vehicle range | Starlink Mini | 40 W |
+| Offline | No link available | None | 10 W |
+
+In Offline mode, the kit stores data locally and synchronizes when a link is restored.
+
+---
+
+### 7. Open Questions
+
+1. Total kit mass exceeds 8 kg target by ~2 kg. WNIR instrument is the primary contributor.
+2. Starlink Mini power draw at 40 W reduces battery life to ~6 hours continuous.
+3. Compression ratio for hyperspectral cubes under field conditions requires measurement.
+4. Tablet ruggedness under IP67 field use requires validation.
+
+See `01_FEASIBILITY/open_questions.md`.
+
+
+
+===== FILE: 00_ARCHITECTURE\07_isolation_enclosure.md =====
+
+# Block 7: Isolation Enclosure Architecture — EMI, Vibration, Thermal Feedthroughs
+
+This document defines the physical enclosure of every compute block in the DAXSI platform. The enclosure is treated as a subsystem, not as sheet metal. Each layer addresses a distinct physical threat: kinetic load, vibration, electromagnetic interference, and thermal exchange.
+
+---
+
+### 1. Threat Model
+
+The Cybertruck platform exposes onboard compute to four overlapping threats that are absent in a data center.
+
+| Threat | Source | Frequency / Range | Consequence |
+|---|---|---|---|
+| Kinetic impact | Debris, terrain strike, cargo shift | Impulse | Structural deformation, connector shear |
+| Vibration | Drivetrain, off-road surface, manipulator motion | 5–500 Hz | Solder fatigue, connector wear, sensor drift |
+| EMI — electric | Traction inverter, motor phases, Powershare | 10 kHz–1 GHz | Data corruption, clock jitter |
+| EMI — magnetic | Motor fields, external sources | 50 Hz–100 kHz | Inductive coupling into signal lines |
+| Thermal | GPU clusters, solar gain, external ambient | Continuous | Derating, throttling |
+| Moisture / dust | Wading, dust storms, condensation | Continuous | Corrosion, short circuit |
+
+Each layer of the enclosure addresses one or more of these threats. No single layer addresses all.
+
+---
+
+### 2. Layer Stack
+External environment
+│
+▼
+[L1] Aluminum structural shell, 3–5 mm, sealed
+│
+▼
+[L2] Aluminum foam damping layer, 10–15 mm
+│
+▼
+[L3] Faraday CYBER NC-Berry Rip Stop, double layer
+│
+▼
+[L4] Wire-rope isolators, passive broadband
+│
+▼
+[L5] HSLDS magnetic-pneumatic modules, adaptive
+│
+▼
+Internal compute chassis
+│
+▼
+[L6] Optical ports, ODU Expanded Beam
+[L7] Hermetic coolant feedthroughs
+
+text
+
+---
+
+### 3. Layer Specifications
+
+#### L1 — Aluminum Structural Shell
+
+| Parameter | Value | Status |
+|---|---|---|
+| Material | 6061-T6 aluminum | `[COTS]` |
+| Wall thickness | 3–5 mm | `[COTS]` |
+| Sealing | Gasketed, IP67 | `[COTS]` |
+| Function | Structural rigidity, primary electric-field shielding, thermal mass | `[COTS]` |
+
+Aluminum provides electric-field attenuation but does not provide magnetic shielding. Magnetic attenuation is delegated to L3.
+
+#### L2 — Aluminum Foam Damping Layer
+
+| Parameter | Value | Status |
+|---|---|---|
+| Material | Closed-cell aluminum foam | `[COTS]` |
+| Thickness | 10–15 mm | `[COTS]` |
+| Function | Structural vibration damping, acoustic absorption | `[COTS]` |
+| Internal damping ratio | 5–10× monolithic aluminum | `[COTS]` |
+
+The foam is bonded to the inner wall of L1. It dissipates vibration energy through micro-plastic deformation of the cell walls. This layer is passive and requires no power.
+
+#### L3 — EMI Inner Liner
+
+| Parameter | Value | Status |
+|---|---|---|
+| Material | Faraday CYBER NC-Berry Rip Stop | `[COTS]` |
+| Construction | Nickel-copper plated polyester ripstop | `[COTS]` |
+| Attenuation | 75 dB, 100 MHz–18 GHz | `[COTS]` |
+| Thickness | 7 mil | `[COTS]` |
+| Layers | Double, with seam overlap ≥ 30 mm | `[COTS]` |
+| Function | Magnetic and electric field shielding, seam closure | `[COTS]` |
+
+The two layers are offset so that seams do not align. Overlap regions are bonded with conductive adhesive. Cable and optical penetrations are wrapped and bonded to the liner to preserve shield continuity.
+
+#### L4 — Passive Vibration Isolation
+
+| Parameter | Value | Status |
+|---|---|---|
+| Type | Wire-rope isolator | `[COTS]` |
+| Mounting | Four-point per chassis | `[COTS]` |
+| Frequency range | 5–200 Hz attenuation | `[COTS]` |
+| Function | Broadband passive isolation, no power required | `[COTS]` |
+
+Wire-rope isolators are selected over elastomeric mounts because they tolerate temperature extremes, do not degrade under UV, and do not outgas in a sealed enclosure.
+
+#### L5 — Adaptive Vibration Isolation
+
+| Parameter | Value | Status |
+|---|---|---|
+| Type | HSLDS magnetic-pneumatic module | `[PROTO]` |
+| Mounting | One per chassis, in series with L4 | `[PROTO]` |
+| Function | Tunable negative stiffness, low-frequency isolation | `[PROTO]` |
+| Control | ROS 2 node, accelerometer feedback | `[PROTO]` |
+
+HSLDS modules are at prototype maturity. They are not required for Phase 0 or Phase 1. Phase 2 introduces them after bench validation. See `01_FEASIBILITY/open_questions.md`.
+
+#### L6 — Optical Ports
+
+| Parameter | Value | Status |
+|---|---|---|
+| Type | ODU Expanded Beam | `[COTS]` |
+| Standard | MIL-DTL-38999 / VITA 95/96 | `[COTS]` |
+| Insertion loss | < 0.15 dB multimode | `[COTS]` |
+| Mating cycles | 50,000 without cleaning | `[COTS]` |
+| Temperature range | −65 °C to +105 °C | `[COTS]` |
+| Sealing | IP67 with protective cap | `[COTS]` |
+
+Expanded-beam construction uses a lens instead of physical fiber-end contact. This removes the primary failure mode of optical connectors in field conditions: contamination of the fiber end face. All inter-block data links use this port type. No copper data cables cross the enclosure boundary.
+
+#### L7 — Coolant Feedthroughs
+
+| Parameter | Value | Status |
+|---|---|---|
+| Type | Hermetic bulkhead fitting | `[COTS]` |
+| Fluid | Dielectric coolant | `[COTS]` |
+| Sealing | Dual O-ring, leak-tested | `[COTS]` |
+| Function | Liquid loop entry and exit without breaking EMI shield | `[COTS]` |
+
+Coolant lines are non-conductive and pass through the shield at a single bonded penetration. The feedthrough body is electrically bonded to L1 and L3 to preserve shield continuity.
+
+---
+
+### 4. Inter-Block Topology
+
+| Link | Type | Rationale |
+|---|---|---|
+| Node 01 ↔ Node 02 | Optical, ODU | Galvanic isolation, high bandwidth |
+| Node 02 ↔ Node 03 | Optical, ODU | Galvanic isolation, high bandwidth |
+| Sensor matrix ↔ Node 01 | Optical, ODU | Prevents sensor-side ground loops |
+| Portable kit ↔ Node 01 | Optical or Starlink | Field link, no copper |
+| Manipulator ↔ Node 01 | Optical, ODU | Motor noise isolation |
+| Power distribution | 48V DC, shielded | Single bonded entry per block |
+
+No copper data conductor crosses an enclosure boundary. Power conductors are shielded and bonded at a single point to avoid ground loops.
+
+---
+
+### 5. Open Questions
+
+1. HSLDS module validation under combined vibration and thermal load — no published field data.
+2. Long-term behavior of aluminum foam under repeated thermal cycling — accelerated life test required.
+3. Optical port contamination rate in dust-heavy environments — field data required.
+4. Faraday liner seam integrity after repeated enclosure opening — maintenance procedure required.
+
+---
+
+### 6. Bill of Materials (Baseline)
+
+| Item | Quantity per block | Status |
+|---|---|---|
+| 6061-T6 enclosure | 1 | `[COTS]` |
+| Aluminum foam sheet | 1 set | `[COTS]` |
+| Faraday CYBER NC-Berry Rip Stop | 1 set, double layer | `[COTS]` |
+| Wire-rope isolator | 4 | `[COTS]` |
+| HSLDS module | 1 | `[PROTO]` |
+| ODU Expanded Beam port | 2–4 | `[COTS]` |
+| Hermetic coolant feedthrough | 2 | `[COTS]` |
+
+
+
+===== FILE: 01_FEASIBILITY\open_questions.md =====
+
+# Open Questions — Unresolved Engineering and Validation Items
+
+This document is the single register of unresolved items across the DAXSI platform. Each item is tracked until it is closed by test, analysis, or design change. An item is not a weakness; it is a scheduled task.
+
+---
+
+### 1. Format
+
+| Field | Meaning |
+|---|---|
+| ID | Sequential identifier |
+| Item | The question or unresolved issue |
+| Domain | Compute, sensors, thermal, isolation, AI, manipulator, kit, hab |
+| Impact | What is blocked until resolved |
+| Method | How it will be resolved (test, analysis, design) |
+| Phase | Earliest phase where resolution is required |
+| Status | Open, in progress, closed |
+
+---
+
+### 2. Register
+
+| ID | Item | Domain | Impact | Method | Phase | Status |
+|---|---|---|---|---|---|---|
+| OQ-01 | STC efficiency at vehicle-scale heat flow | Thermal | Energy recovery estimate | Bench test | 2 | Open |
+| OQ-02 | Radiator capacity at 40 °C ambient, 15 m/s airflow | Thermal | Node 02 peak derating | Wind tunnel | 1 | Open |
+| OQ-03 | PCM discharge time at −30 °C ambient | Thermal | Cold-weather endurance | Simulation + field | 1 | Open |
+| OQ-04 | HSLDS module validation under combined vibration and thermal load | Isolation | Adaptive isolation | Bench + field | 2 | Open |
+| OQ-05 | Aluminum foam behavior under repeated thermal cycling | Isolation | Long-term damping | Accelerated life test | 1 | Open |
+| OQ-06 | Faraday liner seam integrity after repeated opening | Isolation | EMI shield continuity | Maintenance procedure test | 1 | Open |
+| OQ-07 | Optical port contamination rate in dust | Isolation | Maintenance interval | Field test | 2 | Open |
+| OQ-08 | SWIR snapshot sensor reliability under vibration | Sensors | ATH1700-17 deployment | Vibration table | 1 | Open |
+| OQ-09 | Infrasound coverage below 20 Hz | Sensors | Acoustic field completeness | Geophone integration study | 2 | Open |
+| OQ-10 | Hyperspectral data volume compression strategy | Sensors | Real-time pipeline | Algorithm development | 1 | Open |
+| OQ-11 | ESP-NOW mesh range under vehicle body obstruction | Sensors | Peripheral telemetry | Field measurement | 1 | Open |
+| OQ-12 | Milvus/Qdrant index size for full academic baseline | AI | RAG tier 2 capacity | Measurement | 1 | Open |
+| OQ-13 | LoRA fine-tuning power budget during static monitoring | AI | Training schedule | Measurement | 2 | Open |
+| OQ-14 | Knowledge graph compression ratio for Starlink uplink | AI | Orbital validation bandwidth | Field measurement | 3 | Open |
+| OQ-15 | Operator annotation throughput under field conditions | AI | Human-in-the-loop rate | Field study | 2 | Open |
+| OQ-16 | Stowed manipulator vibration tolerance | Manipulator | Phase 2 readiness | Vibration table + field | 2 | Open |
+| OQ-17 | End effector swap mechanism field-replaceable design | Manipulator | Mission flexibility | Design study | 2 | Open |
+| OQ-18 | Arm reach vs. vehicle geometry | Manipulator | Deployment envelope | CAD integration | 1 | Open |
+| OQ-19 | Portable kit mass reduction to 8 kg target | Kit | Operator load | Design trade study | 2 | Open |
+| OQ-20 | Starlink Mini power draw vs. battery life | Kit | Field endurance | Measurement | 1 | Open |
+| OQ-21 | Tablet ruggedness under IP67 field use | Kit | Kit reliability | Environmental test | 1 | Open |
+| OQ-22 | Dry composting lavatory multi-week performance | Hab | Habitation endurance | Field validation | 2 | Open |
+| OQ-23 | Pod mass confirmation after hardware selection | Hab | CG and stability | Weighing | 1 | Open |
+| OQ-24 | Positive-pressure ECLSS power at −30 °C | Hab | Cold-weather endurance | Environmental chamber | 1 | Open |
+| OQ-25 | 8-GPU expansion chassis structural integration | Compute | Stage 1 expansion | Design study | 2 | Open |
+| OQ-26 | L40S thermal profile in sealed enclosure at 40 °C | Compute | Stage 2 expansion | Thermal test | 2 | Open |
+| OQ-27 | Real-time kernel latency under full sensor load | Compute | Node 01 determinism | Bench test | 1 | Open |
+| OQ-28 | Second PCIe chassis structural modification of Vault | Compute | Stage 1 expansion | CAD + structural analysis | 2 | Open |
+
+---
+
+### 3. Resolution Flow
+Open
+│
+▼
+In progress ──► Closed (test/analysis)
+│
+▼
+Design change required
+│
+▼
+Re-open as new item
+
+text
+
+An item is closed only when a documented result exists in the repository. Verbal resolution is not closure.
+
+---
+
+### 4. Critical Path Items
+
+The following items block phase transitions and must be resolved before the phase begins.
+
+| Phase | Blocking items |
+|---|---|
+| Phase 1 → Phase 2 | OQ-08, OQ-10, OQ-12, OQ-18, OQ-20, OQ-23, OQ-24, OQ-27 |
+| Phase 2 → Phase 3 | OQ-01, OQ-04, OQ-07, OQ-09, OQ-13, OQ-15, OQ-16, OQ-17, OQ-19, OQ-22, OQ-25, OQ-26, OQ-28 |
+
+Items not on the critical path may be resolved in parallel with phase execution.
+
+---
+
+### 5. Governance
+
+The register is reviewed at each phase gate. Items that remain open beyond their phase are escalated. Items that are resolved are moved to a closed register with reference to the test report.
+
+No item is deleted. Closed items remain in the register with a resolution reference.
+
+
+
+===== FILE: 01_FEASIBILITY\power_budget.md =====
+
+# Power Budget  Peak and Average Draw by Subsystem
+
+This document defines the electrical power budget of the DAXSI platform. It separates peak draw from average draw, identifies the binding constraint, and defines the operational states that determine load.
+
+---
+
+### 1. Source and Envelope
+
+| Parameter | Value | Status |
+|---|---|---|
+| Primary source | Cybertruck Powershare, 240V NEMA 14-50 | `[COTS]` |
+| Continuous rating | 9.6 kW (40 A) | `[COTS]` |
+| Secondary source | Roof solar, 1.2 kW peak | `[COTS]` |
+| Tertiary source | STC thermal harvester | `[PROTO]` |
+| Internal distribution | 48V DC rail, shielded | `[COTS]` |
+| Failsafe rail | 48V auxiliary, vehicle-native | `[COTS]` |
+
+The 9.6 kW Powershare rating is the hard ceiling. Solar and STC reduce net draw but do not raise the ceiling.
+
+---
+
+### 2. Subsystem Power Table
+
+| Subsystem | Peak (kW) | Average (kW) | Idle (kW) | Notes |
+|---|---|---|---|---|
+| Node 01 Command Core | 0.12 | 0.08 | 0.03 | Continuous |
+| Node 02 Inference Primary | 1.20 | 0.80 | 0.10 | Burst on inference |
+| Node 03 RAG / Storage | 0.16 | 0.12 | 0.05 | Continuous |
+| Cooling loop A | 0.20 | 0.10 | 0.02 | Variable |
+| Cooling loop B | 0.10 | 0.05 | 0.01 | Variable |
+| ECLSS | 0.25 | 0.12 | 0.05 | Variable |
+| Climate control | 0.15 | 0.08 | 0.02 | Variable |
+| Sensor matrix | 0.15 | 0.10 | 0.03 | Continuous |
+| Manipulator | 0.30 | 0.05 | 0.00 | Deployed state only |
+| Portable kit charging | 0.10 | 0.03 | 0.00 | Intermittent |
+| Starlink Mobility | 0.05 | 0.03 | 0.00 | Periodic |
+| **Total** | **2.78** | **1.56** | **0.31** | |
+
+Peak total is 2.78 kW. Average total is 1.56 kW. Idle total is 0.31 kW.
+
+---
+
+### 3. Operational State Budgets
+
+| State | Peak (kW) | Average (kW) | Duration | Notes |
+|---|---|---|---|---|
+| Idle | 0.31 | 0.31 | Indefinite | Parked, minimal monitoring |
+| Static monitoring | 1.80 | 1.50 | Weeks | Full sensors, no motion |
+| Mobile survey | 2.78 | 2.30 | Hours | Full sensors, driving |
+| Deployed | 2.78 | 2.10 | Hours | Manipulator active, kit deployed |
+
+All states are within the 9.6 kW envelope. Peak headroom at Deployed state is 6.82 kW.
+
+---
+
+### 4. Headroom Analysis
+
+| Scenario | Draw (kW) | Headroom (kW) | Status |
+|---|---|---|---|
+| Baseline, mobile survey | 2.78 | 6.82 | `[COTS]` |
+| Stage 1 expansion (8 RTX 6000 Ada) | 3.98 | 5.62 | `[PROTO]` |
+| Stage 2 expansion (8 RTX + 4 L40S) | 4.78 | 4.82 | `[PROTO]` |
+| Stage 3 expansion (external dock) | 6.50 | 3.10 | `[CONCEPT]` |
+
+Expansion is limited by cooling capacity and thermal rejection, not by electrical headroom. At Stage 2, the roof radiator area becomes the binding constraint.
+
+---
+
+### 5. Static Monitoring Budget
+
+Static monitoring is the longest-duration state. It determines battery endurance.
+
+| Load | Draw (kW) |
+|---|---|
+| Node 01 | 0.08 |
+| Node 02 (reduced) | 0.40 |
+| Node 03 | 0.12 |
+| Cooling | 0.15 |
+| ECLSS | 0.12 |
+| Climate | 0.08 |
+| Sensors | 0.10 |
+| **Total** | **1.05** |
+
+With solar input of 0.6 kW average (50% of peak, accounting for angle and weather), net draw is 0.45 kW. Cybertruck traction battery capacity is approximately 123 kWh. At 0.45 kW net draw, endurance is approximately 270 hours, or 11 days, without recharging.
+
+This is the basis for the multi-week station-keeping claim. It assumes favorable solar conditions. In overcast conditions, endurance drops to approximately 5 days.
+
+---
+
+### 6. STC and PCM Contribution
+
+| Source | Contribution | Status |
+|---|---|---|
+| STC thermal harvester | 812% reduction in cooling load | `[PROTO]` |
+| PCM buffer | Shifts heating load from battery to stored heat | `[COTS]` |
+
+STC does not generate net power. It reduces the cooling load by converting low-grade heat to 48V rail current. The 812% estimate is from data-center PoC, not vehicle validation.
+
+---
+
+### 7. Open Questions
+
+1. STC contribution in vehicle thermal environment is not validated.
+2. Static monitoring endurance under overcast conditions requires field measurement.
+3. Manipulator peak draw during dynamic motion exceeds the 0.30 kW estimate in some commercial arms. Requires measurement.
+4. Portable kit charging while deployed reduces Deployed state headroom.
+
+See `01_FEASIBILITY/open_questions.md`.
+
+
+
+
+===== FILE: 01_FEASIBILITY\thermal_budget.md =====
+
+# Thermal Budget  Heat Generation, Rejection, and Harvesting
+
+This document defines the thermal budget of the DAXSI platform. It covers heat generation by node, rejection paths, PCM buffering, and STC harvesting. The binding constraint is roof radiator area, not coolant capacity.
+
+---
+
+### 1. Heat Generation by Node
+
+| Node | Electrical draw (kW) | Heat load (kW) | Notes |
+|---|---|---|---|
+| Node 01 | 0.12 | 0.12 | Near 100% to heat |
+| Node 02 | 1.20 | 1.20 | Near 100% to heat |
+| Node 03 | 0.16 | 0.16 | Near 100% to heat |
+| Cooling pumps | 0.10 | 0.05 | Partial to heat |
+| PDU losses | 0.05 | 0.05 | Conversion losses |
+| **Total compute heat** | | **1.58** | Peak |
+
+All electrical power drawn by compute becomes heat. The only exception is optical power emitted by sensors, which is negligible.
+
+---
+
+### 2. Rejection Paths
+
+| Path | Capacity (kW) | Medium | Status |
+|---|---|---|---|
+| Loop A  roof radiator | 1.50 | Liquid-to-air | `[COTS]` |
+| Loop B  chassis contact | 0.40 | Conduction | `[COTS]` |
+| PCM buffer | 0.30 (transient) | Phase change | `[COTS]` |
+| STC harvester | 0.15 (recovery) | Thermal-to-electric | `[PROTO]` |
+| **Total rejection** | **2.35** | | |
+
+Total rejection capacity exceeds peak heat load by 0.77 kW. This margin covers ambient temperature derating.
+
+---
+
+### 3. Roof Radiator Sizing
+
+| Parameter | Value | Status |
+|---|---|---|
+| Area | 1.8 m | `[COTS]` |
+| Coolant inlet temp | 55 C | `[COTS]` |
+| Ambient temp (design) | 40 C | `[COTS]` |
+| Delta-T | 15 C | `[COTS]` |
+| Airflow (vehicle moving) | 15 m/s | `[COTS]` |
+| Rejection capacity | 1.50 kW | `[COTS]` |
+
+At 40 C ambient and 15 m/s airflow, a 1.8 m radiator rejects approximately 1.50 kW. This is sufficient for Node 02 at average load, but not at peak. Peak load is handled by PCM buffering.
+
+In static monitoring, airflow is zero. Radiator capacity drops to approximately 0.40 kW by natural convection. This is why PCM buffering is required for static states.
+
+---
+
+### 4. PCM Buffer
+
+| Parameter | Value | Status |
+|---|---|---|
+| Material | Paraffin-based phase-change material | `[COTS]` |
+| Mass | 25 kg | `[COTS]` |
+| Melting point | 58 C | `[COTS]` |
+| Latent heat | 200 kJ/kg | `[COTS]` |
+| Total storage | 5.0 MJ | `[COTS]` |
+| Charge time (peak load) | 45 min | `[COTS]` |
+| Discharge time (cabin heating) | 8 hours | `[COTS]` |
+
+The PCM buffer absorbs heat during peak inference and releases it during cold static periods. It is not a net energy source; it is a time-shift buffer.
+
+At 0.30 kW transient absorption, 5.0 MJ provides approximately 4.6 hours of buffering. This covers the gap between peak inference and radiator capacity.
+
+---
+
+### 5. STC Thermal Harvester
+
+| Parameter | Value | Status |
+|---|---|---|
+| Technology | Semiconductor-sensitized thermal cell | `[PROTO]` |
+| Operating temperature | 3080 C | `[PROTO]` |
+| Conversion efficiency | 13% | `[PROTO]` |
+| Output | 48V DC, 0.050.15 kW | `[PROTO]` |
+| Integration point | Loop A return line | `[PROTO]` |
+
+STC is not a primary power source. It recovers low-grade heat that would otherwise be rejected to ambient. At 13% efficiency and 1.5 kW heat flow, output is 0.0150.045 kW. The 0.15 kW upper estimate assumes a larger array than the baseline.
+
+STC is a Phase 2 item. It is not required for Phase 0 or Phase 1.
+
+---
+
+### 6. Cold-Weather Operation
+
+| Scenario | Heat source | Status |
+|---|---|---|
+| Cabin heating, engine off | PCM buffer | `[COTS]` |
+| Cabin heating, compute active | Node 02 waste heat via liquid-to-air | `[COTS]` |
+| Battery warming | Chassis contact loop B | `[COTS]` |
+| Extreme cold (30 C) | PCM + heat pump | `[COTS]` |
+
+At 30 C ambient, radiator capacity is irrelevant. All heat is retained. The PCM buffer and Node 02 waste heat provide cabin heating without drawing from the traction battery.
+
+This is the primary value of the thermal architecture: in cold conditions, waste heat is a resource, not a problem.
+
+---
+
+### 7. Thermal Derating
+
+| Condition | Derating | Mitigation |
+|---|---|---|
+| Ambient > 45 C | Node 02 throttles to 60% | PCM buffer, reduced inference |
+| Radiator blocked | Node 02 throttles to 40% | Operator alert, cleaning |
+| Coolant leak | Node 02 shuts down | Failsafe to Node 01 |
+| Static, no airflow | Node 02 limited to 0.40 kW | PCM buffer |
+
+Derating is graceful. The platform does not shut down; it reduces capability.
+
+---
+
+### 8. Open Questions
+
+1. Radiator capacity at 40 C ambient and 15 m/s airflow requires wind-tunnel validation.
+2. PCM discharge time under 30 C ambient requires thermal simulation.
+3. STC efficiency at vehicle-scale heat flow is unvalidated.
+4. Chassis contact cooling capacity depends on vehicle thermal mass, not measured.
+
+See `01_FEASIBILITY/open_questions.md`.
+
+
+
+===== FILE: 01_FEASIBILITY\trl_matrix.md =====
+
+# TRL Matrix — Technology Readiness Level by Component
+
+This document assigns a Technology Readiness Level (TRL) to every major component of the DAXSI platform. TRL is defined on the NASA scale: 1 is basic principle, 9 is flight-proven in operational environment. The purpose is to separate what can be built today from what requires development.
+
+---
+
+### 1. TRL Scale Reference
+
+| TRL | Definition |
+|---|---|
+| 1 | Basic principles observed |
+| 2 | Technology concept formulated |
+| 3 | Experimental proof of concept |
+| 4 | Component validated in laboratory |
+| 5 | Component validated in relevant environment |
+| 6 | Prototype demonstrated in relevant environment |
+| 7 | Prototype demonstrated in operational environment |
+| 8 | System complete and qualified |
+| 9 | System proven in operational environment |
+
+---
+
+### 2. Compute Cluster
+
+| Component | TRL | Basis | Status |
+|---|---|---|---|
+| Jetson AGX Orin 64GB | 9 | Shipping product, deployed in robotics | `[COTS]` |
+| Jetson Orin NX 16GB | 9 | Shipping product | `[COTS]` |
+| RTX 6000 Ada 48GB | 9 | Shipping product | `[COTS]` |
+| 4-GPU PCIe cluster in sealed enclosure | 6 | Prototype demonstrated in lab, not in vehicle | `[PROTO]` |
+| 8-GPU expansion chassis | 4 | Component validated in lab, not integrated | `[PROTO]` |
+| L40S in sealed enclosure | 5 | Component validated, thermal profile not validated | `[PROTO]` |
+| External dock (~1 TB) | 2 | Concept only | `[CONCEPT]` |
+
+---
+
+### 3. Sensor Matrix
+
+| Component | TRL | Basis | Status |
+|---|---|---|---|
+| Cubert ULTRIS X20 | 8 | Commercial product, field-deployed | `[COTS]` |
+| Specim AFX10 | 9 | Commercial, airborne baseline | `[COTS]` |
+| ATH1700-17 | 7 | Commercial, limited field data under vibration | `[PROTO]` |
+| Specim SX25 | 8 | Commercial, static deployment | `[COTS]` |
+| FLIR Boson 640 | 9 | Shipping product, widely deployed | `[COTS]` |
+| Ouster OS1-128 | 9 | Shipping product, IP68/69K | `[COTS]` |
+| SBM-20 Geiger | 9 | Shipping product | `[COTS]` |
+| Fluxgate magnetometer | 9 | Shipping product | `[COTS]` |
+| Bosch BME680 | 9 | Shipping product | `[COTS]` |
+| ReSpeaker Mic Array v2.0 | 8 | Commercial, widely deployed | `[COTS]` |
+| Bosch BNO055 | 9 | Shipping product | `[COTS]` |
+
+---
+
+### 4. Isolation Enclosure
+
+| Component | TRL | Basis | Status |
+|---|---|---|---|
+| 6061-T6 aluminum shell | 9 | Standard fabrication | `[COTS]` |
+| Aluminum foam damping | 7 | Commercial, limited vehicle integration data | `[PROTO]` |
+| Faraday CYBER NC-Berry Rip Stop | 7 | Commercial, 75 dB rating, not vehicle-validated | `[PROTO]` |
+| Wire-rope isolators | 9 | Aerospace standard | `[COTS]` |
+| HSLDS magnetic-pneumatic modules | 4 | Lab prototype, no field data | `[PROTO]` |
+| ODU Expanded Beam ports | 9 | MIL-DTL-38999 qualified | `[COTS]` |
+| Hermetic coolant feedthroughs | 9 | Standard industrial | `[COTS]` |
+
+---
+
+### 5. Thermal and Energy Harvesting
+
+| Component | TRL | Basis | Status |
+|---|---|---|---|
+| Liquid loop A (GPU to roof) | 7 | Commercial, vehicle integration not validated | `[PROTO]` |
+| Liquid loop B (chassis contact) | 8 | Commercial, widely deployed | `[COTS]` |
+| PCM buffer | 6 | Prototype demonstrated in EV context | `[PROTO]` |
+| STC thermal harvester | 4 | PoC demonstrated in data center, not vehicle | `[PROTO]` |
+
+---
+
+### 6. AI Layer
+
+| Component | TRL | Basis | Status |
+|---|---|---|---|
+| Open-weights 70B inference on 4× RTX 6000 Ada | 9 | Standard deployment | `[COTS]` |
+| 4-bit AWQ quantization | 9 | Standard practice | `[COTS]` |
+| Whisper Large v3 on Jetson | 9 | Standard deployment | `[COTS]` |
+| Milvus/Qdrant on 8× Orin NX | 6 | Prototype, index size not measured | `[PROTO]` |
+| LoRA/QLoRA on validated logs | 8 | Standard practice | `[COTS]` |
+| xAI Grok via Starlink | 8 | Commercial API, link not field-validated | `[PROTO]` |
+| Knowledge graph compression for uplink | 5 | Component validated, ratio not measured | `[PROTO]` |
+
+---
+
+### 7. Manipulator
+
+| Component | TRL | Basis | Status |
+|---|---|---|---|
+| igus ReBeL 6DOF class arm | 9 | Shipping product | `[COTS]` |
+| Stowage bay with IP67 seal | 6 | Prototype, not vehicle-validated | `[PROTO]` |
+| ROS 2 action control | 9 | Standard | `[COTS]` |
+| Vibration tolerance in stowed position | 4 | Not validated | `[PROTO]` |
+
+---
+
+### 8. Portable Kit
+
+| Component | TRL | Basis | Status |
+|---|---|---|---|
+| LiSen iSpecField-HH | 8 | Commercial, field-deployed | `[COTS]` |
+| LiSen iSpecField-WNIR-HH | 8 | Commercial, field-deployed | `[COTS]` |
+| ECOPROBE 5 | 8 | Commercial, field-deployed | `[COTS]` |
+| Starlink Mini | 9 | Shipping product | `[COTS]` |
+| Compression strategy | 6 | Prototype, ratio not measured | `[PROTO]` |
+
+---
+
+### 9. CyberHab
+
+| Component | TRL | Basis | Status |
+|---|---|---|---|
+| Carbon fiber pod shell | 7 | Commercial, vehicle integration not validated | `[PROTO]` |
+| Dry composting lavatory | 8 | Commercial, widely deployed | `[COTS]` |
+| HEPA H14 + charcoal ECLSS | 9 | Standard | `[COTS]` |
+| 48V heat pump | 8 | Commercial | `[COTS]` |
+| Positive-pressure cabin | 8 | Standard | `[COTS]` |
+| Solar array 1.2 kW | 9 | Standard | `[COTS]` |
+
+---
+
+### 10. System-Level Assessment
+
+| Level | TRL | Basis |
+|---|---|---|
+| Baseline system (Phase 0) | 6 | Prototype can be demonstrated in lab |
+| Static laboratory (Phase 1) | 5 | Component validated in relevant environment |
+| Mobile survey (Phase 2) | 4 | Component validated in lab |
+| Autonomous missions (Phase 3) | 3 | Experimental proof of concept |
+
+The system as a whole is TRL 4–6. Individual COTS components are TRL 8–9. The gap is integration, not invention.
+
+---
+
+### 11. Critical Path Items
+
+Components with TRL below 6 that block system-level readiness.
+
+| Component | TRL | Blocking |
+|---|---|---|
+| HSLDS modules | 4 | Phase 2 adaptive isolation |
+| STC thermal harvester | 4 | Phase 2 energy recovery |
+| Stowed manipulator vibration | 4 | Phase 2 mobile survey |
+| Knowledge graph compression | 5 | Phase 3 orbital validation |
+| Milvus/Qdrant index size | 6 | Phase 1 RAG |
+
+These items define the development schedule. Everything else is integration.
+
+
+
+===== FILE: 02_ROADMAP\phase_0_bench.md =====
+
+# Phase 0  Bench Validation
+
+Duration: 3 months. Objective: validate the core signal chain on a bench before any vehicle integration. No Cybertruck is required in this phase.
+
+---
+
+### 1. Scope
+
+Phase 0 proves that the sensor-to-inference pipeline works. It does not prove vehicle integration, thermal performance, or field reliability.
+
+| In scope | Out of scope |
+|---|---|
+| ROS 2 pipeline | Vehicle integration |
+| One hyperspectral sensor | Full sensor matrix |
+| One LiDAR | Manipulator |
+| One GPU inference node | Thermal loops |
+| PTP time sync | Starlink link |
+| iceoryx zero-copy | ECLSS |
+
+---
+
+### 2. Hardware
+
+| Item | Quantity | Status |
+|---|---|---|
+| Workstation with 1 RTX 6000 Ada | 1 | `[COTS]` |
+| Jetson AGX Orin 64GB dev kit | 1 | `[COTS]` |
+| Cubert ULTRIS X20 or equivalent | 1 | `[COTS]` |
+| Ouster OS1-128 | 1 | `[COTS]` |
+| FLIR Boson 640 | 1 | `[COTS]` |
+| PTP-capable network switch | 1 | `[COTS]` |
+| Calibration targets | 1 set | `[COTS]` |
+
+Total bench cost is dominated by the RTX 6000 Ada and the hyperspectral sensor.
+
+---
+
+### 3. Tasks
+
+| ID | Task | Deliverable | Status |
+|---|---|---|---|
+| P0-01 | Install ROS 2 Humble, iceoryx, PTP | Working middleware stack | `[PLANNED]` |
+| P0-02 | Integrate ULTRIS X20 driver | Live hyperspectral stream | `[PLANNED]` |
+| P0-03 | Integrate Ouster OS1-128 driver | Live point cloud | `[PLANNED]` |
+| P0-04 | Integrate FLIR Boson driver | Live thermal stream | `[PLANNED]` |
+| P0-05 | Validate PTP sync across all sensors | < 1 µs alignment | `[PLANNED]` |
+| P0-06 | Validate iceoryx zero-copy path | CPU overhead < 5% | `[PLANNED]` |
+| P0-07 | Run open-weights 70B on 1 GPU | Baseline inference latency | `[PLANNED]` |
+| P0-08 | Run YOLOv11 multi-spectral on fused stream | Detection on test targets | `[PLANNED]` |
+| P0-09 | Record MCAP dataset with geospatial tags | Reference dataset | `[PLANNED]` |
+| P0-10 | Document pipeline latency end-to-end | Latency report | `[PLANNED]` |
+
+---
+
+### 4. Success Criteria
+
+| Criterion | Target | Method |
+|---|---|---|
+| PTP alignment | < 1 µs across sensors | Oscilloscope / PTP daemon log |
+| iceoryx CPU overhead | < 5% at full stream | `top` / `perf` |
+| Inference latency | < 2 s for 1k tokens on 1 GPU | Timed benchmark |
+| Detection accuracy | > 80% on calibration targets | Manual annotation |
+| Dataset integrity | No dropped frames over 1 hour | MCAP inspection |
+
+Failure to meet a criterion does not stop the phase. It becomes an open question and is carried forward.
+
+---
+
+### 5. Deliverables
+
+| Deliverable | Format | Location |
+|---|---|---|
+| Middleware stack | Working repo | `phase_0/` branch |
+| Driver integrations | ROS 2 packages | `phase_0/` branch |
+| Reference dataset | MCAP + Parquet | External storage |
+| Latency report | Markdown | `02_ROADMAP/phase_0_report.md` |
+| Open questions update | Register entries | `01_FEASIBILITY/open_questions.md` |
+
+---
+
+### 6. Exit Criteria
+
+Phase 0 is complete when:
+
+1. All ten tasks are executed.
+2. Success criteria are measured and documented.
+3. Open questions are updated with new findings.
+4. Latency report is committed.
+5. A go/no-go decision is recorded for Phase 1.
+
+A no-go decision is a valid outcome. It redirects effort before vehicle integration begins.
+
+---
+
+### 7. Risk
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| Hyperspectral driver not ROS 2 native | High | Schedule slip | Budget 2 weeks for adapter |
+| iceoryx incompatibility with sensor driver | Medium | Pipeline redesign | Fallback to standard DDS |
+| 70B model does not fit on 1 GPU at 4-bit | Low | Reduce to 34B | Accept smaller baseline |
+| PTP hardware not available on dev kit | Medium | Use software PTP | Accept < 100 µs alignment |
+
+
+
+
+===== FILE: 02_ROADMAP\phase_1_static.md =====
+
+# Phase 1 - Static Laboratory on Cybertruck
+
+Duration: 6 months. Objective: integrate the full sensor matrix and compute cluster into the Cybertruck platform in a stationary configuration. No driving, no manipulator.
+
+---
+
+### 1. Scope
+
+Phase 1 proves that the platform works as a stationary laboratory. The vehicle is parked. The manipulator is stowed. The portable kit is docked.
+
+| In scope | Out of scope |
+|---|---|
+| Full sensor matrix | Mobile survey |
+| All three compute nodes | Manipulator deployment |
+| Isolation enclosures | Portable kit field use |
+| Thermal loops A and B | Starlink orbital validation |
+| PCM buffer | LoRA fine-tuning |
+| ECLSS | Autonomous missions |
+
+---
+
+### 2. Hardware Integration
+
+| Subsystem | Quantity | Status |
+|---|---|---|
+| Node 01 enclosure | 1 | `[COTS]` |
+| Node 02 enclosure | 1 | `[COTS]` |
+| Node 03 enclosure | 1 | `[COTS]` |
+| Sensor mounts (roof, A-pillar, tailgate) | 1 set | `[COTS]` |
+| Liquid loop A + roof radiator | 1 | `[COTS]` |
+| Liquid loop B | 1 | `[COTS]` |
+| PCM buffer | 1 | `[COTS]` |
+| ECLSS unit | 1 | `[COTS]` |
+| CyberHab pod | 1 | `[COTS]` |
+| ODU optical ports | 6-8 | `[COTS]` |
+
+---
+
+### 3. Tasks
+
+| ID | Task | Deliverable | Status |
+|---|---|---|---|
+| P1-01 | Install and seal Node 01/02/03 enclosures | Isolated compute | `[PLANNED]` |
+| P1-02 | Mount sensor matrix | Full coverage | `[PLANNED]` |
+| P1-03 | Install liquid loop A and roof radiator | Thermal path | `[PLANNED]` |
+| P1-04 | Install liquid loop B | Thermal path | `[PLANNED]` |
+| P1-05 | Install PCM buffer | Thermal buffer | `[PLANNED]` |
+| P1-06 | Install ECLSS | Life support | `[PLANNED]` |
+| P1-07 | Install optical inter-node links | Galvanic isolation | `[PLANNED]` |
+| P1-08 | Calibrate all sensors | Calibration records | `[PLANNED]` |
+| P1-09 | Run full pipeline at static load | 72-hour continuous run | `[PLANNED]` |
+| P1-10 | Measure thermal derating | Thermal report | `[PLANNED]` |
+| P1-11 | Measure EMI shield effectiveness | EMI report | `[PLANNED]` |
+| P1-12 | Measure power budget in all states | Power report | `[PLANNED]` |
+
+---
+
+### 4. Success Criteria
+
+| Criterion | Target | Method |
+|---|---|---|
+| Continuous operation | 72 hours without failure | Log analysis |
+| Thermal derating | < 20% at 40 C ambient | Thermal sensors |
+| EMI attenuation | > 60 dB at 1 GHz | Spectrum analyzer |
+| PTP alignment | < 1 µs across nodes | PTP daemon log |
+| Power draw, static | < 1.8 kW peak | Power meter |
+| Sensor calibration | All sensors within spec | Calibration records |
+
+---
+
+### 5. Deliverables
+
+| Deliverable | Format | Location |
+|---|---|---|
+| Integrated platform | Physical | Vehicle |
+| Thermal report | Markdown | `02_ROADMAP/phase_1_report.md` |
+| EMI report | Markdown | `02_ROADMAP/phase_1_report.md` |
+| Power report | Markdown | `02_ROADMAP/phase_1_report.md` |
+| Calibration records | CSV | Empirical vault |
+| 72-hour dataset | MCAP | Empirical vault |
+
+---
+
+### 6. Exit Criteria
+
+Phase 1 is complete when:
+
+1. All twelve tasks are executed.
+2. Success criteria are measured.
+3. 72-hour continuous run is completed without failure.
+4. Reports are committed.
+5. Go/no-go decision for Phase 2 is recorded.
+
+---
+
+### 7. Risk
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| Thermal derating exceeds 20% | High | Reduced inference | Add PCM, increase radiator |
+| EMI attenuation below 60 dB | Medium | Data corruption | Add liner layer, improve seams |
+| Enclosure weight exceeds estimate | Medium | CG shift | Rebalance pod layout |
+| Optical port contamination | High | Link failure | Field cleaning procedure |
+| ECLSS power exceeds budget | Low | Reduced endurance | Derate climate control |
+
+
+
+===== FILE: 02_ROADMAP\phase_2_mobile.md =====
+
+# Phase 2 - Mobile Survey
+
+Duration: 9 months. Objective: validate the platform in motion. The vehicle drives, the sensor matrix collects data, the manipulator is integrated, and the portable kit is field-tested.
+
+---
+
+### 1. Scope
+
+Phase 2 proves that the platform works while moving. It does not prove autonomous missions or orbital validation.
+
+| In scope | Out of scope |
+|---|---|
+| Driving data collection | Autonomous missions |
+| Manipulator deployment | LoRA fine-tuning in field |
+| Portable kit field test | Orbital validation loop |
+| Vibration validation | Long-duration autonomy |
+| HSLDS module integration | STC thermal harvester |
+| Starlink link test | Knowledge graph uplink |
+
+---
+
+### 2. Hardware Additions
+
+| Subsystem | Quantity | Status |
+|---|---|---|
+| Manipulator arm (6DOF) | 1 | `[COTS]` |
+| Stowage bay + actuator | 1 | `[COTS]` |
+| HSLDS modules | 3 | `[PROTO]` |
+| Portable kit (full) | 1 | `[COTS]` |
+| Starlink Mini | 1 | `[COTS]` |
+| Vibration sensors (reference) | 4 | `[COTS]` |
+
+---
+
+### 3. Tasks
+
+| ID | Task | Deliverable | Status |
+|---|---|---|---|
+| P2-01 | Integrate manipulator and stowage bay | Deployable arm | `[PLANNED]` |
+| P2-02 | Validate stowed vibration tolerance | Vibration report | `[PLANNED]` |
+| P2-03 | Integrate HSLDS modules | Adaptive isolation | `[PLANNED]` |
+| P2-04 | Field-test portable kit | Kit field report | `[PLANNED]` |
+| P2-05 | Test Starlink link from moving vehicle | Link report | `[PLANNED]` |
+| P2-06 | Collect mobile dataset | MCAP dataset | `[PLANNED]` |
+| P2-07 | Validate sensor calibration in motion | Calibration drift report | `[PLANNED]` |
+| P2-08 | Measure real-world vibration spectrum | Vibration spectrum | `[PLANNED]` |
+| P2-09 | Test manipulator deployment sequence | Deployment log | `[PLANNED]` |
+| P2-10 | Measure power budget in mobile state | Power report | `[PLANNED]` |
+| P2-11 | Test data integrity over 100 km | Integrity report | `[PLANNED]` |
+| P2-12 | Validate portable kit link modes | Link mode report | `[PLANNED]` |
+
+---
+
+### 4. Success Criteria
+
+| Criterion | Target | Method |
+|---|---|---|
+| Stowed manipulator vibration | No damage after 1000 km | Inspection + vibration log |
+| Sensor calibration drift | < 5% over 100 km | Before/after calibration |
+| Data integrity | No lost frames over 100 km | MCAP inspection |
+| Starlink link | > 10 Mbps average | Throughput log |
+| Portable kit mass | < 12 kg | Weighing |
+| HSLDS isolation | > 10 dB at 5-20 Hz | Accelerometer comparison |
+
+---
+
+### 5. Deliverables
+
+| Deliverable | Format | Location |
+|---|---|---|
+| Mobile dataset | MCAP + Parquet | Empirical vault |
+| Vibration report | Markdown | `02_ROADMAP/phase_2_report.md` |
+| Kit field report | Markdown | `02_ROADMAP/phase_2_report.md` |
+| Link report | Markdown | `02_ROADMAP/phase_2_report.md` |
+| Calibration drift records | CSV | Empirical vault |
+
+---
+
+### 6. Exit Criteria
+
+Phase 2 is complete when:
+
+1. All twelve tasks are executed.
+2. 100 km mobile dataset is collected.
+3. Manipulator is validated in stowed and deployed states.
+4. Portable kit is field-tested in all link modes.
+5. Go/no-go decision for Phase 3 is recorded.
+
+---
+
+### 7. Risk
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| Stowed manipulator vibration damage | Medium | Arm replacement | Damping inserts, lock |
+| Sensor calibration drift | High | Data quality | Frequent recalibration |
+| Starlink link dropouts | High | Data sync gaps | Local buffering |
+| HSLDS module failure | Medium | Reduced isolation | Wire-rope fallback |
+| Portable kit overweight | High | Operator fatigue | Drop WNIR instrument |
+
+
+
+===== FILE: 02_ROADMAP\phase_3_autonomous.md =====
+
+# Phase 3 - Autonomous Missions
+
+Duration: 12 months. Objective: close the loop between field collection, onboard fine-tuning, and orbital validation. The platform operates autonomously for extended periods with human oversight.
+
+---
+
+### 1. Scope
+
+Phase 3 proves that the platform can run multi-week missions, train on its own validated data, and synchronize knowledge graphs with the orbital layer.
+
+| In scope | Out of scope |
+|---|---|
+| Multi-week autonomous operation | Full self-driving |
+| LoRA fine-tuning in field | Unsupervised training |
+| Orbital validation via Starlink | Real-time teleoperation |
+| Knowledge graph uplink | Global model training |
+| STC thermal harvester | Vehicle redesign |
+| Autonomous anomaly detection | Autonomous sample return |
+
+---
+
+### 2. Hardware Additions
+
+| Subsystem | Quantity | Status |
+|---|---|---|
+| STC thermal harvester array | 1 | `[PROTO]` |
+| Enhanced Starlink antenna | 1 | `[COTS]` |
+| Extended empirical vault storage | 1 | `[COTS]` |
+| Redundant Node 01 | 1 | `[COTS]` |
+
+---
+
+### 3. Tasks
+
+| ID | Task | Deliverable | Status |
+|---|---|---|---|
+| P3-01 | Integrate STC harvester | Thermal recovery | `[PLANNED]` |
+| P3-02 | Deploy LoRA fine-tuning pipeline | Adapter training | `[PLANNED]` |
+| P3-03 | Implement knowledge graph compression | Uplink-ready graphs | `[PLANNED]` |
+| P3-04 | Establish orbital validation loop | Bidirectional sync | `[PLANNED]` |
+| P3-05 | Run 7-day autonomous mission | Mission log | `[PLANNED]` |
+| P3-06 | Run 30-day autonomous mission | Mission log | `[PLANNED]` |
+| P3-07 | Validate adapter rollback | Rollback procedure | `[PLANNED]` |
+| P3-08 | Measure STC contribution | Thermal report | `[PLANNED]` |
+| P3-09 | Validate anomaly detection autonomy | Detection report | `[PLANNED]` |
+| P3-10 | Test operator override in all states | Override log | `[PLANNED]` |
+| P3-11 | Measure long-term data integrity | Integrity report | `[PLANNED]` |
+| P3-12 | Document lessons learned | Lessons report | `[PLANNED]` |
+
+---
+
+### 4. Success Criteria
+
+| Criterion | Target | Method |
+|---|---|---|
+| 7-day mission | No critical failure | Mission log |
+| 30-day mission | No critical failure | Mission log |
+| LoRA adapter quality | No degradation on validation set | Benchmark |
+| Knowledge graph compression | > 20:1 ratio | Measurement |
+| Orbital sync | > 95% success rate | Sync log |
+| STC contribution | > 5% cooling load reduction | Thermal measurement |
+| Operator override | < 60 s response | Timed test |
+
+---
+
+### 5. Deliverables
+
+| Deliverable | Format | Location |
+|---|---|---|
+| 7-day mission log | Markdown + MCAP | `02_ROADMAP/phase_3_report.md` |
+| 30-day mission log | Markdown + MCAP | `02_ROADMAP/phase_3_report.md` |
+| LoRA adapters | Binary | Empirical vault |
+| Knowledge graphs | JSON-LD | Empirical vault |
+| Lessons report | Markdown | `02_ROADMAP/phase_3_report.md` |
+
+---
+
+### 6. Exit Criteria
+
+Phase 3 is complete when:
+
+1. All twelve tasks are executed.
+2. 30-day autonomous mission is completed.
+3. LoRA adapters are validated and rolled back at least once.
+4. Orbital validation loop is operational.
+5. Final system report is committed.
+
+---
+
+### 7. Risk
+
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+| LoRA adapter degradation | Medium | Model quality | Held-out validation set |
+| Orbital sync failure | High | Knowledge loss | Local retry queue |
+| STC underperformance | High | Energy budget | Defer to Phase 4 |
+| 30-day mission failure | Medium | Schedule slip | Incremental mission length |
+| Operator override latency | Low | Safety | Dedicated override channel |
+
+---
+
+### 8. Post-Phase 3
+
+Phase 3 is the final planned phase. Beyond it, the platform is a validated research instrument. Further development is mission-specific and outside the scope of this repository.
+
+
+
+===== FILE: 03_USE_CASES\anomalies.md =====
+
+# Use Case - Anomalies
+
+This document defines the anomaly detection domain of the DAXSI platform. An anomaly is any observation that does not match the pre-loaded academic baseline within a defined tolerance. Anomalies are the primary product of the platform.
+
+---
+
+### 1. Domain Scope
+
+| In scope | Out of scope |
+|---|---|
+| Environmental anomalies | Prediction |
+| Radiation anomalies | Attribution without evidence |
+| Magnetic anomalies | Classification without baseline |
+| Gas anomalies | Remediation |
+| Thermal anomalies | Policy decisions |
+
+The platform detects and characterizes. It does not explain anomalies without evidence.
+
+---
+
+### 2. Detection Methods
+
+| Anomaly type | Primary sensor | Detection method | Status |
+|---|---|---|---|
+| Radiation | SBM-20 | Threshold crossing | `[COTS]` |
+| Magnetic | Fluxgate | Deviation from baseline | `[COTS]` |
+| Gas | BME680, NDIR | Concentration spike | `[COTS]` |
+| Thermal | FLIR Boson | Temperature anomaly | `[COTS]` |
+| Optical | Hyperspectral | Spectral deviation | `[COTS]` |
+| Acoustic | ReSpeaker array | Frequency anomaly | `[COTS]` |
+| Spatial | LiDAR | Geometry anomaly | `[COTS]` |
+
+---
+
+### 3. Baseline Comparison
+
+Every anomaly is compared against the pre-loaded academic baseline in RAG tier 2.
+
+| Step | Action | Tool |
+|---|---|---|
+| 1 | Detection | Sensor threshold or model |
+| 2 | Localization | RTK-GPS + IMU |
+| 3 | Baseline query | RAG tier 2 |
+| 4 | Deviation score | Local backbone |
+| 5 | Operator alert | Console |
+| 6 | Operator validation | Voice or console |
+| 7 | Record creation | Empirical vault |
+| 8 | Orbital query | Starlink + Grok |
+
+---
+
+### 4. Anomaly Record Format
+
+| Field | Type | Description |
+|---|---|---|
+| ID | UUID | Unique record identifier |
+| Timestamp | ISO 8601 | PTP-synchronized |
+| Position | RTK-GPS | Lat, lon, alt |
+| Sensor source | Enum | Which sensor triggered |
+| Raw value | Float | Measured value |
+| Baseline value | Float | Expected value |
+| Deviation | Float | Absolute or relative |
+| Confidence | Float | Model confidence |
+| Operator note | Text | Free annotation |
+| Orbital validation | Text | Grok output, if available |
+| Follow-up required | Boolean | Operator decision |
+
+---
+
+### 5. Priority Classification
+
+| Priority | Criteria | Response |
+|---|---|---|
+| P0 | Immediate safety risk | Operator alert, stop mission |
+| P1 | Strong deviation, high confidence | Immediate operator review |
+| P2 | Moderate deviation, medium confidence | Scheduled operator review |
+| P3 | Weak deviation, low confidence | Log only, batch review |
+
+Priority is assigned by the local backbone and confirmed by the operator.
+
+---
+
+### 6. Validation Criteria
+
+An anomaly record is valid when:
+
+1. Sensor is calibrated within the last mission.
+2. PTP alignment is within 1 µs.
+3. Baseline value is documented.
+4. Operator has reviewed the record.
+5. Record is stored in the empirical vault.
+
+An anomaly without operator review is flagged as unconfirmed and excluded from training.
+
+---
+
+### 7. Open Questions
+
+1. Baseline coverage for rare anomalies is incomplete.
+2. False positive rate in field conditions is not measured.
+3. Operator alert fatigue over multi-week missions is unknown.
+4. Orbital validation latency for P0 anomalies is not defined.
+
+
+
+===== FILE: 03_USE_CASES\biomimetics.md =====
+
+# Use Case - Biomimetic Design
+
+This document defines the biomimetic research domain of the DAXSI platform. It describes how natural structures, fractals, and fluid dynamics are digitized and analyzed for engineering inspiration.
+
+---
+
+### 1. Domain Scope
+
+| In scope | Out of scope |
+|---|---|
+| Fractal geometry capture | Biological sampling |
+| Fluid dynamics observation | Genetic analysis |
+| Structural morphology | Organism classification |
+| Surface texture analysis | Ecological modeling |
+| Swarm behavior observation | Behavioral biology |
+
+The platform captures and digitizes natural geometry. It does not collect biological specimens.
+
+---
+
+### 2. Measurement Methods
+
+| Method | Sensor | Output | Status |
+|---|---|---|---|
+| Fractal geometry | LiDAR, VIS imaging | Point cloud, fractal dimension | `[COTS]` |
+| Surface texture | Hyperspectral, VIS | Texture map | `[COTS]` |
+| Fluid dynamics | VIS high-speed | Flow pattern | `[COTS]` |
+| Thermal signatures | LWIR | Thermal map | `[COTS]` |
+| Acoustic patterns | ReSpeaker array | Acoustic signature | `[COTS]` |
+
+---
+
+### 3. Sensor-to-Pattern Mapping
+
+| Natural pattern | Primary sensor | Engineering inspiration |
+|---|---|---|
+| Fractal branching | LiDAR, VIS | Structural optimization |
+| Surface microtexture | Hyperspectral, VIS | Drag reduction, adhesion |
+| Fluid flow | VIS high-speed | Vortex control, propulsion |
+| Thermal gradients | LWIR | Heat dissipation |
+| Acoustic resonance | ReSpeaker array | Noise reduction |
+
+---
+
+### 4. Experiment Protocol
+
+| Step | Action | Tool |
+|---|---|---|
+| 1 | Detect natural anomaly | YOLOv11 multi-spectral |
+| 2 | Operator confirms target | Console |
+| 3 | Capture LiDAR point cloud | Ouster OS1-128 |
+| 4 | Capture high-resolution VIS | VIS matrix |
+| 5 | Capture thermal map | FLIR Boson |
+| 6 | Capture acoustic signature | ReSpeaker array |
+| 7 | Compute fractal dimension | Local backbone |
+| 8 | Compare against engineering baseline | RAG tier 2 |
+| 9 | Operator annotates | Console |
+| 10 | Store validated record | Empirical vault |
+
+---
+
+### 5. Result Format
+
+| Field | Type | Description |
+|---|---|---|
+| ID | UUID | Unique record identifier |
+| Timestamp | ISO 8601 | PTP-synchronized |
+| Position | RTK-GPS | Lat, lon, alt |
+| Point cloud | Array | XYZ, intensity |
+| VIS image | Array | Full resolution |
+| Thermal map | Array | Temperature |
+| Acoustic signature | Array | Frequency, amplitude |
+| Fractal dimension | Float | Computed |
+| Engineering analogy | Text | Local backbone output |
+| Operator note | Text | Free annotation |
+
+---
+
+### 6. Validation Criteria
+
+A biomimetic record is valid when:
+
+1. Point cloud resolution is sufficient for fractal dimension computation.
+2. VIS image is in focus and color-calibrated.
+3. Acoustic signature is captured in low-noise conditions.
+4. Operator has annotated the engineering relevance.
+5. Record is stored in the empirical vault.
+
+---
+
+### 7. Open Questions
+
+1. Fractal dimension computation from LiDAR point cloud is not validated.
+2. High-speed VIS capture requires a sensor not in the baseline.
+3. Acoustic signature correlation with structural properties is not established.
+4. Engineering analogy quality from local backbone is not measured.
+
+
+
+===== FILE: 03_USE_CASES\materials.md =====
+
+# Use Case - Materials and Chemistry
+
+This document defines the materials and chemistry research domain of the DAXSI platform. It describes what is measured, which sensors are used, and what constitutes a valid result.
+
+---
+
+### 1. Domain Scope
+
+| In scope | Out of scope |
+|---|---|
+| Stress and degradation analysis | Synthesis |
+| Corrosion detection | Bulk chemical processing |
+| Mineral identification | Industrial production |
+| Composite inspection | Destructive testing |
+| Surface chemistry | Long-term aging studies |
+
+The platform observes and characterizes. It does not synthesize or process materials.
+
+---
+
+### 2. Measurement Methods
+
+| Method | Sensor | Output | Status |
+|---|---|---|---|
+| Hyperspectral reflectance | ULTRIS X20, ATH1700-17, SX25 | Material signature | `[COTS]` |
+| Thermal emission | FLIR Boson 640 | Thermal anomaly map | `[COTS]` |
+| LiDAR geometry | Ouster OS1-128 | Surface morphology | `[COTS]` |
+| Gas emission | BME680, NDIR, electrochemical | Volatile signature | `[COTS]` |
+| Radiation | SBM-20 | Radiation flux | `[COTS]` |
+
+No method is destructive. All measurements are non-contact or minimally invasive.
+
+---
+
+### 3. Sensor-to-Material Mapping
+
+| Material property | Primary sensor | Secondary sensor |
+|---|---|---|
+| Mineral composition | SWIR 900-2500 nm | VNIR 400-1000 nm |
+| Moisture content | SWIR 1450/1940 nm | LWIR thermal |
+| Oxidation state | VNIR 400-1000 nm | Gas emission |
+| Surface roughness | LiDAR | VIS imaging |
+| Thermal conductivity | LWIR | Contact probe (kit) |
+| Volatile emission | Gas analyzer | LWIR |
+
+---
+
+### 4. Experiment Protocol
+
+| Step | Action | Tool |
+|---|---|---|
+| 1 | Detect anomaly | YOLOv11 multi-spectral |
+| 2 | Operator confirms target | Console |
+| 3 | Capture hyperspectral cube | ULTRIS / ATH1700 |
+| 4 | Capture thermal map | FLIR Boson |
+| 5 | Capture LiDAR geometry | Ouster OS1-128 |
+| 6 | Sample gas if applicable | Kit gas analyzer |
+| 7 | Compare against baseline | RAG tier 2 |
+| 8 | Operator annotates | Console |
+| 9 | Store validated record | Empirical vault |
+| 10 | Trigger fine-tuning | Static state |
+
+---
+
+### 5. Result Format
+
+| Field | Type | Description |
+|---|---|---|
+| ID | UUID | Unique record identifier |
+| Timestamp | ISO 8601 | PTP-synchronized |
+| Position | RTK-GPS | Lat, lon, alt |
+| Orientation | IMU quaternion | Local reference |
+| Spectral cube | Array | Wavelength, intensity |
+| Thermal map | Array | Temperature |
+| Point cloud | Array | XYZ, intensity |
+| Gas signature | Array | Species, concentration |
+| Operator note | Text | Free annotation |
+| Model hypothesis | Text | Local backbone output |
+| Orbital validation | Text | Grok output, if available |
+
+---
+
+### 6. Validation Criteria
+
+A materials record is valid when:
+
+1. All sensors are calibrated within the last mission.
+2. PTP alignment is within 1 µs.
+3. Operator has annotated the record.
+4. Baseline comparison is documented.
+5. Record is stored in the empirical vault.
+
+A record that fails any criterion is flagged and excluded from training.
+
+---
+
+### 7. Open Questions
+
+1. SWIR sensor field reliability under vibration is not validated. See OQ-08.
+2. Hyperspectral compression for storage is not defined. See OQ-10.
+3. Mineral identification accuracy against academic baseline is not measured.
+4. Corrosion detection minimum detectable area is not defined.
+
+
+
+===== FILE: 04_GOVERNANCE\data_sovereignty.md =====
+
+# Data Sovereignty
+
+This document defines the data ownership, access, and retention model of the DAXSI platform. It is a governance document, not a technical one. It defines who owns what, and under which conditions data leaves the platform.
+
+---
+
+### 1. Ownership
+
+| Data class | Owner | Location | Transfer |
+|---|---|---|---|
+| Raw sensor logs | Platform operator | Empirical vault | Never leaves without explicit export |
+| Validated annotations | Platform operator | Empirical vault | Never leaves without explicit export |
+| Trained adapters | Platform operator | Empirical vault | Optional upload to orbital layer |
+| Knowledge graphs | Platform operator | Empirical vault | Compressed upload to orbital layer |
+| Base model weights | Model provider | Read-only | Not owned by operator |
+| Academic baseline | Public domain | Node 03 | Pre-loaded, not transmitted |
+
+The operator owns everything the platform generates. The platform owns nothing.
+
+---
+
+### 2. Data Classes
+
+| Class | Definition | Retention | Encryption |
+|---|---|---|---|
+| Raw | Unprocessed sensor output | Indefinite | At rest, AES-256 |
+| Processed | Calibrated, time-aligned data | Indefinite | At rest, AES-256 |
+| Annotated | Operator-validated records | Indefinite | At rest, AES-256 |
+| Derived | Model outputs, hypotheses | Indefinite | At rest, AES-256 |
+| Transmitted | Knowledge graphs sent to orbital layer | N/A | In transit, TLS 1.3 |
+
+No data class is deleted automatically. Deletion is an explicit operator action.
+
+---
+
+### 3. Transfer Rules
+
+| Destination | Allowed data | Conditions |
+|---|---|---|
+| Orbital layer (xAI) | Compressed knowledge graphs | Operator approval per session |
+| Orbital layer (xAI) | LoRA adapters | Operator approval per adapter |
+| Orbital layer (xAI) | Raw sensor data | Never |
+| Portable kit | Annotations, hypotheses | Always |
+| Portable kit | Raw sensor data | Never |
+| External storage | Any | Physical export only |
+
+Raw sensor data never leaves the platform over a network. Physical export is the only path.
+
+---
+
+### 4. Operator Consent
+
+Every transfer to the orbital layer requires explicit operator consent.
+
+| Transfer type | Consent model | Default |
+|---|---|---|
+| Knowledge graph | Per-session approval | Off |
+| LoRA adapter | Per-adapter approval | Off |
+| Model update | Per-update approval | Off |
+| Telemetry | None | Off |
+
+Consent is logged with timestamp, operator ID, and data hash. A transfer without a consent record is a policy violation.
+
+---
+
+### 5. Retention and Deletion
+
+| Action | Trigger | Authority |
+|---|---|---|
+| Retention | Default | Automatic |
+| Archive | Operator decision | Operator |
+| Delete | Operator decision | Operator |
+| Secure erase | Decommission | Operator + second party |
+
+Deletion is a two-step process: mark for deletion, confirm deletion. No automatic purge.
+
+---
+
+### 6. Audit
+
+Every data access is logged.
+
+| Event | Logged fields |
+|---|---|
+| Read | Timestamp, user, data ID |
+| Write | Timestamp, user, data ID |
+| Transfer | Timestamp, user, data ID, destination |
+| Delete | Timestamp, user, data ID, confirmation |
+
+Logs are stored in the empirical vault and are immutable.
+
+---
+
+### 7. Open Questions
+
+1. Encryption key management for multi-operator scenarios is not defined.
+2. Legal jurisdiction for data collected across borders is not addressed.
+3. Secure erase procedure for NVMe SSDs requires validation.
+4. Audit log integrity under adversarial conditions is not tested.
+
+
+
+===== FILE: 04_GOVERNANCE\safety_ethics.md =====
+
+# Safety and Ethics
+
+This document defines the safety case and ethical framework of the DAXSI platform. It covers operational hazards, human override, autonomous behavior limits, and environmental responsibility.
+
+---
+
+### 1. Operational Hazards
+
+| Hazard | Source | Severity | Mitigation |
+|---|---|---|---|
+| Vehicle motion during manipulator deployment | Operator error | High | Interlock: arm only deploys when parked |
+| High voltage exposure | Powershare 240V | High | Sealed PDU, lockout procedure |
+| Coolant leak | Loop A/B | Medium | Leak sensor, automatic derating |
+| Battery thermal runaway | Traction battery | High | Vehicle-native BMS, no modification |
+| Radiation exposure | Natural sources | Low | Shielding, dosimetry |
+| Dust inhalation | Field environment | Low | HEPA ECLSS, positive pressure |
+| Optical hazard | LiDAR 905/1550 nm | Medium | Eye-safe class, no direct viewing |
+| Acoustic hazard | High-SPL sources | Low | Hearing protection, distance |
+
+---
+
+### 2. Human Override
+
+The operator has absolute override authority in all states.
+
+| Override | Method | Latency target |
+|---|---|---|
+| Stop mission | Physical button + console | < 1 s |
+| Stop manipulator | Physical E-stop | < 0.5 s |
+| Stop data collection | Console | < 2 s |
+| Disable orbital sync | Console | < 5 s |
+| Enter Idle state | Console | < 10 s |
+
+No autonomous decision can override a human stop command. The override channel is physically separate from the main compute path.
+
+---
+
+### 3. Autonomous Behavior Limits
+
+| Behavior | Allowed | Conditions |
+|---|---|---|
+| Anomaly detection | Yes | Always |
+| Anomaly flagging | Yes | Always |
+| Hypothesis generation | Yes | Always |
+| Manipulator motion | No | Requires operator confirmation |
+| Vehicle motion | No | Platform does not drive itself |
+| Orbital sync | No | Requires operator consent |
+| Adapter deployment | No | Requires operator approval |
+| Data deletion | No | Requires operator action |
+
+The platform is autonomous in observation, not in action.
+
+---
+
+### 4. Environmental Responsibility
+
+| Principle | Implementation |
+|---|---|
+| Leave no trace | No waste discharge, no chemical release |
+| Minimize disturbance | Stationary observation preferred over driving |
+| Protect wildlife | No active interference, no baiting |
+| Respect protected areas | Operator responsibility, no automated override |
+| Minimize noise | Electric drive, low-noise fans |
+
+The platform is designed to observe without altering the environment.
+
+---
+
+### 5. Data Ethics
+
+| Principle | Implementation |
+|---|---|
+| Operator ownership | See `data_sovereignty.md` |
+| Consent for transfer | Explicit per-session |
+| No covert collection | All sensors visible and documented |
+| No personal data | Platform does not target humans |
+| No surveillance | No facial recognition, no tracking |
+
+The platform is a scientific instrument, not a surveillance system.
+
+---
+
+### 6. Failure Safety
+
+| Failure | Safe state | Recovery |
+|---|---|---|
+| Compute loss | Idle | Operator restart |
+| Coolant loss | Derated | Operator repair |
+| Starlink loss | Local autonomy | Automatic retry |
+| Sensor loss | Partial perception | Operator alert |
+| Manipulator fault | Stowed | Manual recovery |
+| ECLSS fault | Positive pressure maintained | Operator alert |
+| Power loss | Battery-only | Operator decision |
+
+No failure results in uncontrolled motion, uncontrolled emission, or data loss.
+
+---
+
+### 7. Regulatory Considerations
+
+| Area | Status |
+|---|---|
+| Vehicle modification | Requires local regulatory approval |
+| Radio transmission (Starlink) | Licensed service |
+| LiDAR eye safety | Class 1 eye-safe |
+| Radiation source | None (passive detection only) |
+| Environmental impact | No discharge, minimal disturbance |
+
+Regulatory compliance is the operator's responsibility. The platform provides the technical basis, not the legal authorization.
+
+---
+
+### 8. Open Questions
+
+1. E-stop latency under full compute load is not measured.
+2. Autonomous anomaly flagging rate under field conditions is unknown.
+3. Environmental impact assessment for sensitive areas is not defined.
+4. Insurance and liability model for autonomous observation is not addressed.
+
+
+
+===== FILE: INTELLECTUAL_PROPERTY.md =====
+
+# Intellectual Property Declaration
+
+---
+
+### 1. Ownership
+
+The conceptual framework, system architecture, and methodology of the DAXSI-Explorer project are the intellectual property of the author.
+
+This includes:
+
+- The kinetic first-principles data collection model.
+- The multi-node compute topology for a mobile platform.
+- The human-in-the-loop scientific mentorship methodology.
+- The sovereign physical-world dataset architecture.
+
+These elements originated from the author's design intent. They are not derived from prior published work.
+
+---
+
+### 2. Documentation Process
+
+The documents in this repository were drafted with the assistance of a large language model used as a writing tool. The model was used for formatting, language editing, and structural organization of technical content provided by the author.
+
+The model did not originate the concept, the architecture, the research domains, or the methodology. All technical decisions, component selections, and system boundaries were made by the author.
+
+No text in this repository should be read as a claim of AI authorship. The model is a tool, not a contributor.
+
+---
+
+### 3. Licensing
+
+| Component | License |
+|---|---|
+| Documentation (this repository) | MIT License |
+| Core concept and methodology | Author's copyright |
+| Brand identity (DAXSI) | Author's copyright |
+| Third-party component names | Property of respective owners |
+
+The MIT License covers the text of this repository. It does not grant rights to the DAXSI name, the core methodology, or any patentable element of the architecture.
+
+---
+
+### 4. Commercial Use
+
+Commercial use of the documented architecture requires written permission from the author.
+
+This applies to:
+
+- Integration of the described topology into a commercial product.
+- Use of the DAXSI name in a commercial context.
+- Filing of patents based on the described methodology.
+
+Educational use, research use, and community evaluation are permitted under the MIT License without additional permission.
+
+---
+
+### 5. Third-Party Components
+
+This repository references commercial products by name for technical clarity. No affiliation, endorsement, or partnership is implied.
+
+Referenced products include, but are not limited to:
+
+- Tesla Cybertruck and Powershare.
+- NVIDIA Jetson and RTX platforms.
+- xAI Grok.
+- SpaceX Starlink.
+- Ouster, FLIR, Specim, Cubert, LiSen, ECOPROBE, ODU, igus.
+
+All trademarks remain the property of their respective owners.
+
+---
+
+### 6. Copyright
+
+Copyright © 2026. All rights reserved.
+
+Documentation licensed under MIT. Core concept, methodology, and brand identity remain under the author's copyright.
+
+
+
+===== FILE: PHILOSOPHY.md =====
+
+# Philosophy - From Text to Physical Reality
+
+---
+
+### I. The Limit of Text
+
+For the past decade, frontier AI has been trained on the internet. This corpus is a closed loop: human writing, synthetic noise, and structural bias. A model trained on it learns what humans have written about the world. It does not learn the world.
+
+The result is a system that can describe a mineral but has never measured one. It can explain a physical law but has never tested it. It can generate a hypothesis but cannot collect the data that would confirm or reject it.
+
+This is not a limitation of model size. It is a limitation of input. No amount of text produces empirical ground truth.
+
+---
+
+### II. The Kinetic Instrument
+
+DAXSI is a response to that limit. It is not a vehicle with a server. It is a sensor-and-compute platform that moves through the physical world and measures it directly.
+
+The platform has three properties that text-based AI lacks:
+
+| Property | Consequence |
+|---|---|
+| Physical presence | Direct measurement, not description |
+| Motion | Access to terrain and phenomena beyond fixed installations |
+| Local compute | Autonomy without network dependency |
+
+The platform does not replace text-based AI. It gives it a body.
+
+---
+
+### III. First-Principles Data
+
+The data collected by DAXSI is first-principles in a specific sense: it is measured, not written. It comes from sensors calibrated against known references, timestamped to microsecond precision, and tagged with position and orientation.
+
+This data is not free of error. It is free of the structural bias that comes from training on human text. A spectral measurement of a mineral does not care what humans have written about that mineral.
+
+The platform does not claim to produce absolute truth. It claims to produce data that can be checked against physical reality, independently of any text corpus.
+
+---
+
+### IV. The Human as Mentor
+
+The operator is not a user. The operator is the scientific mentor.
+
+The platform observes, detects anomalies, and generates hypotheses. The operator validates, corrects, and annotates. The model does not self-validate. It learns from the operator's judgment, not from its own output.
+
+This relationship is deliberate. An autonomous system that trains on its own output drifts. An autonomous system that trains on validated human judgment improves.
+
+---
+
+### V. Data Sovereignty
+
+The data collected by the platform belongs to the operator. It is stored locally, encrypted at rest, and transferred only with explicit consent.
+
+This is not a political statement. It is an engineering requirement. A scientific instrument that cannot guarantee the integrity and ownership of its data is not a scientific instrument.
+
+The orbital layer, when used, receives compressed knowledge graphs, not raw data. The raw empirical record stays with the operator.
+
+---
+
+### VI. What the Platform Is Not
+
+| Not | Why |
+|---|---|
+| A self-driving vehicle | The platform does not drive itself |
+| A surveillance system | No facial recognition, no tracking |
+| A synthesis laboratory | It observes, it does not produce |
+| A replacement for human judgment | The operator is the final arbiter |
+| A finished product | It is an engineering specification |
+
+The platform is a research instrument. It is designed to be built, tested, and improved.
+
+---
+
+### VII. The Long View
+
+The most valuable asset in AI is not code. It is verified experience of physical reality. Text corpora are finite, contaminated, and increasingly synthetic. Physical measurement is neither.
+
+A network of instruments that collect first-principles data, validate it locally, and share compressed knowledge graphs is a different kind of AI infrastructure. It does not depend on the internet. It does not depend on a single vendor. It depends on the physical world, which is the one resource that cannot be scraped.
+
+DAXSI is one instrument in that network. It is not the network itself.
+
+
+
+===== FILE: README.md =====
+
+# DAXSI-Explorer
+
+An open architecture for a kinetic, autonomous physical-science laboratory built on the Tesla Cybertruck platform with an edge xAI/NVIDIA compute cluster and Starlink orbital link.
+
+---
+
+## Project Status
+
+This repository is an engineering specification, not a product. It is structured to separate four layers that are often conflated:
+
+| Layer | Description | Maturity |
+|---|---|---|
+| **Vision** | Why AI must leave the cloud and touch physical reality | Conceptual |
+| **Architecture** | System topology, blocks, interfaces | Specified |
+| **Feasibility** | TRL of each component, power/thermal budgets | Partially validated |
+| **Roadmap** | Phased path from bench to autonomous missions | Draft |
+
+Every technical claim in this repository is tagged with its maturity. Components that are COTS and available today are marked `[COTS]`. Components that exist as prototypes are marked `[PROTO]`. Components that are architectural placeholders are marked `[CONCEPT]`.
+
+---
+
+## Core Thesis
+
+Current frontier models are trained on web text: a closed loop of human writing, synthetic noise, and structural bias. This produces systems that know what humans have written about the world, but have no direct empirical access to the world itself.
+
+DAXSI is a response to that limit. It is a mobile sensor-and-compute platform that collects first-principles physical data in the field, validates it locally against an open-weights model, and synchronizes compressed knowledge graphs with an orbital validation layer via Starlink.
+
+The platform is not a vehicle with a server. It is a kinetic instrument.
+
+---
+
+## Architecture Overview
+Physical World
+
+
+[Sensor Matrix]  ROS 2 / iceoryx / PTP 
+ 
+ 
+[Isolation Enclosure] 
+Al shell + Faraday NC-Berry Rip Stop 
+Al foam damping + wire-rope isolators 
+Optical ports (ODU expanded beam) 
+ 
+ 
+[Compute Cluster] 
+Node 01 Command Core 128 GB VRAM 
+Node 02 Inference Primary 192 GB VRAM 
+Node 03 RAG / Storage 128 GB VRAM 
+Baseline: 448 GB, scalable to ~1 TB 
+ 
+ [Thermal Harvesting] 
+ PCM buffer + STC array 
+  48V auxiliary rail 
+ 
+ [Manipulator] 
+ Retractable arm, IP67 stowed 
+ 
+ [Portable Kit] 
+Handheld spectrometer + gas 
+analyzer + Starlink Mini 
+ 
+ 
+[AI Layer] 
+Local backbone: open-weights 70B 
+Orbital validation: xAI Grok via Starlink 
+Human-in-the-Loop: operator as mentor 
+ 
+ 
+[Knowledge Graph]  compressed  orbital 
+
+text
+
+---
+
+## Compute Cluster
+
+Block-scalable architecture. Baseline configuration uses COTS hardware; expansion path is defined but not yet validated.
+
+| Node | Role | Baseline Hardware | VRAM | Status |
+|---|---|---|---|---|
+| 01 | Command Core | 2 Jetson AGX Orin 64GB | 128 GB | `[COTS]` |
+| 02 | Inference Primary | 4 RTX 6000 Ada 48GB | 192 GB | `[COTS]` |
+| 03 | RAG / Storage | 8 Jetson Orin NX 16GB | 128 GB | `[COTS]` |
+| **Baseline total** | | | **448 GB** | |
+| 02 expanded | Inference Primary | 8 RTX 6000 Ada 48GB | 384 GB | `[COTS]` |
+| 03 expanded | RAG / Storage | 4 L40S 48GB | 192 GB | `[COTS]` |
+| **Expanded total** | | | **704 GB** | |
+| Further expansion | External dock | trailer or static dock | ~1 TB | `[CONCEPT]` |
+
+Hard ceiling is defined by Cybertruck Powershare thermal and power envelope, not by available hardware.
+
+---
+
+## Sensor Matrix
+
+Full-spectrum perception is organized by physical field, not by device list. Each field maps to the best available COTS sensor for a moving platform.
+
+| Field | Sub-range | Sensor | Status |
+|---|---|---|---|
+| EM  optical | UVVIS 3501000 nm | Cubert ULTRIS X20 (snapshot) | `[COTS]` |
+| EM  optical | VNIR 4001000 nm | Specim AFX10 | `[COTS]` |
+| EM  optical | SWIR 9001700 nm | ATH1700-17 (snapshot, 25 fps) | `[COTS]` |
+| EM  optical | SWIR ext. 9602500 nm | Specim SX25 | `[COTS]` |
+| EM  thermal | LWIR 7.712.3 µm | FLIR Boson 640 | `[COTS]` |
+| EM  ranging | 905 / 1550 nm | Ouster OS1-128 | `[COTS]` |
+| EM  ionizing | gamma / beta | SBM-20 Geiger | `[COTS]` |
+| EM  magnetic | 3-axis | fluxgate magnetometer | `[COTS]` |
+| Chemical | VOC, CO2, CH4, NOx | Bosch BME680 + NDIR + electrochemical cells | `[COTS]` |
+| Acoustic | audible + infrasound | ReSpeaker Mic Array v2.0 | `[COTS]` |
+| Kinetic | 9-DOF | Bosch BNO055 | `[COTS]` |
+
+Snapshot hyperspectral instruments are preferred over pushbroom for a moving platform. Pushbroom requires stable motion and produces distortion under vibration.
+
+---
+
+## Isolation Enclosure
+
+Each compute block is housed in an aluminum enclosure with layered isolation.
+
+| Layer | Function | Material | Status |
+|---|---|---|---|
+| Structural shell | Mechanical + primary EMI | Aluminum, 35 mm, sealed | `[COTS]` |
+| Damping fill | Structural vibration damping | Aluminum foam, 1015 mm | `[COTS]` |
+| EMI inner liner | Magnetic + electric shielding | Faraday CYBER NC-Berry Rip Stop, 75 dB, 100 MHz18 GHz, double layer | `[COTS]` |
+| Passive isolation | Broadband vibration isolation | Wire-rope isolators | `[COTS]` |
+| Adaptive isolation | Tunable damping | HSLDS magnetic-pneumatic modules | `[PROTO]` |
+| Optical ports | Galvanic isolation between blocks | ODU Expanded Beam, IP67 | `[COTS]` |
+| Coolant feedthroughs | Sealed liquid loop | Hermetic fittings | `[COTS]` |
+
+---
+
+## Thermal and Energy Harvesting
+
+Waste heat is not discarded. It is buffered and partially recovered.
+
+| Component | Function | Status |
+|---|---|---|
+| PCM buffer | Phase-change material stores heat during operation, releases it to cabin during cold cycles | `[COTS]` |
+| STC array | Semiconductor-sensitized thermal cells convert low-grade waste heat to 48V rail | `[PROTO]` |
+| Liquid loop A | RTX 6000 Ada cluster  roof radiator | `[COTS]` |
+| Liquid loop B | Command core  chassis-contact cooling blocks | `[COTS]` |
+
+Estimated net reduction of static-monitoring power draw: 812%, to be validated in Phase 1.
+
+---
+
+## AI Layer
+
+Three layers, each with a distinct role.
+
+| Layer | Role | Implementation | Status |
+|---|---|---|---|
+| Local backbone | Zero-latency inference, offline autonomy | Open-weights 70B, 4-bit AWQ, model-agnostic | `[COTS]` |
+| Orbital validation | Cross-check, enrichment, weight updates | xAI Grok via Starlink | `[COTS]` |
+| Human-in-the-Loop | Final arbitration, annotation, LoRA/QLoRA triggers | Operator console | `[COTS]` |
+
+The local backbone is model-agnostic by design. Any open-weights checkpoint can be substituted. The orbital layer is xAI-specific by project intent, consistent with the Cybertruck / Starlink platform.
+
+---
+
+## Manipulator
+
+Retractable arm, stowed in a sealed bay under the Vault, deployed via linear actuator. Controlled as a ROS 2 action server.
+
+| Parameter | Value | Status |
+|---|---|---|
+| Degrees of freedom | 6 | `[COTS]` |
+| Payload | 3 kg | `[COTS]` |
+| Stowed protection | IP67 bay, two-point mechanical lock, damping inserts | `[COTS]` |
+| Control interface | ROS 2 action | `[COTS]` |
+
+Vibration load on the stowed arm under off-road motion is an open question. See `01_FEASIBILITY/open_questions.md`.
+
+---
+
+## Portable Kit
+
+Handheld measurement suite for locations the vehicle cannot reach. Thin client: collects, compresses, transmits to Node 02 or to the orbital layer.
+
+| Component | Function | Status |
+|---|---|---|
+| LiSen iSpecField-HH | Spectroradiometer, 2001100 nm, <2 kg | `[COTS]` |
+| LiSen iSpecField-WNIR-HH | Spectroradiometer, 3502500 nm | `[COTS]` |
+| ECOPROBE 5 | PID + IR gas analyzer, VOC/CH4/CO2, 3 kg | `[COTS]` |
+| Starlink Mini | 1.16 kg, 2540 W, IP67, up to 100 Mbit/s | `[COTS]` |
+| Tablet | ROS 2 client, compressed uplink | `[COTS]` |
+
+---
+
+## CyberHab
+
+Composite expedition pod mounted on the Vault utility rails. Dry architecture: no water mass.
+
+| Subsystem | Specification | Status |
+|---|---|---|
+| Shell | Carbon fiber sandwich, R-14, matte graphite | `[COTS]` |
+| Sleeping platform | Folding memory foam | `[COTS]` |
+| Wet block | Dry composting lavatory, positive-pressure ventilation | `[COTS]` |
+| ECLSS | HEPA H14 + activated charcoal, positive pressure | `[COTS]` |
+| Climate | 48V heat pump, PCM-assisted | `[COTS]` |
+| Solar | 1.2 kW peak, MPPT | `[COTS]` |
+
+Water supply and UV-C loop are removed from the architecture. All remaining systems are dry.
+
+---
+
+## Power Budget
+
+Baseline draw from Cybertruck Powershare 240V NEMA 14-50 outlet, 9.6 kW continuous.
+
+| Load | Peak | Average | Notes |
+|---|---|---|---|
+| Node 02 (4 RTX 6000 Ada) | 1.2 kW | 0.8 kW | Inference bursts |
+| Node 01 (2 AGX Orin) | 0.12 kW | 0.08 kW | Continuous |
+| Node 03 (8 Orin NX) | 0.16 kW | 0.12 kW | Continuous |
+| Cooling loops | 0.3 kW | 0.15 kW | Variable |
+| ECLSS + climate | 0.4 kW | 0.2 kW | Variable |
+| Sensors | 0.15 kW | 0.1 kW | Continuous |
+| **Total** | **2.33 kW** | **1.45 kW** | Within 9.6 kW envelope |
+
+Peak headroom is sufficient for transient bursts. Static monitoring states draw approximately 1.5 kW, consistent with multi-week station-keeping on traction battery reserves.
+
+---
+
+## Roadmap
+
+| Phase | Objective | Duration | Status |
+|---|---|---|---|
+| 0 | Bench validation: 1 GPU, 1 LiDAR, 1 hyperspectral sensor, ROS 2 pipeline | 3 months | `[PLANNED]` |
+| 1 | Static laboratory on Cybertruck: full sensor matrix, thermal loops, PCM | 6 months | `[PLANNED]` |
+| 2 | Mobile data collection: manipulator integration, portable kit field test | 9 months | `[PLANNED]` |
+| 3 | Autonomous missions: orbital validation loop, LoRA fine-tuning in field | 12 months | `[PLANNED]` |
+
+Detailed phase documents are in `02_ROADMAP/`.
+
+---
+
+## Repository Structure
+daxsi-explorer/
+ README.md
+ PHILOSOPHY.md
+ INTELLECTUAL_PROPERTY.md
+ 00_ARCHITECTURE/
+  00_system_overview.md
+  01_compute_cluster.md
+  02_sensor_matrix.md
+  03_cyber_hab.md
+  04_ai_training_rag.md
+  05_manipulator.md
+  06_portable_kit.md
+  07_isolation_enclosure.md
+ 01_FEASIBILITY/
+  trl_matrix.md
+  power_budget.md
+  thermal_budget.md
+  open_questions.md
+ 02_ROADMAP/
+  phase_0_bench.md
+  phase_1_static.md
+  phase_2_mobile.md
+  phase_3_autonomous.md
+ 03_USE_CASES/
+  materials.md
+  biomimetics.md
+  anomalies.md
+ 04_GOVERNANCE/
+ data_sovereignty.md
+ safety_ethics.md
+
+text
+
+---
+
+## License
+
+MIT License for educational and community evaluation. Core concept, methodology, and brand identity remain under the author's copyright. See `INTELLECTUAL_PROPERTY.md`.
+

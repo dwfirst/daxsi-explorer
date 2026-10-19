@@ -227,7 +227,7 @@ Peak headroom is sufficient for transient bursts. Static monitoring states draw 
 | Phase | Objective | Duration | Status |
 |---|---|---|---|
 | 0 | Bench validation: 1 GPU, 1 LiDAR, 1 hyperspectral sensor, ROS 2 pipeline | 3 months | `[PLANNED]` |
-| 1 | Static laboratory on Cybertruck: full sensor matrix, thermal loops, PCM | 6 months | `[PLANNED]` |
+| 1 | Static laboratory on Cybertruck: full Sensor Matrix, thermal loops, PCM | 6 months | `[PLANNED]` |
 | 2 | Mobile data collection: manipulator integration, portable kit field test | 9 months | `[PLANNED]` |
 | 3 | Autonomous missions: orbital validation loop, LoRA fine-tuning in field | 12 months | `[PLANNED]` |
 
@@ -274,3 +274,4 @@ text
 ## License
 
 MIT License for educational and community evaluation. Core concept, methodology, and brand identity remain under the author's copyright. See `INTELLECTUAL_PROPERTY.md`.
+
