@@ -271,7 +271,16 @@ text
 
 ---
 
+## Author
+
+Dwane Kimbrough (dwfirst)
+
+- GitHub: https://github.com/dwfirst
+- Project: DAXSI-Explorer
+
+---
 ## License
 
 MIT License for educational and community evaluation. Core concept, methodology, and brand identity remain under the author's copyright. See `INTELLECTUAL_PROPERTY.md`.
+
 
