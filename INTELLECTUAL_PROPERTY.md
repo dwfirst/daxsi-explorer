@@ -72,6 +72,8 @@ All trademarks remain the property of their respective owners.
 
 ### 6. Copyright
 
-Copyright © 2026. All rights reserved.
+Copyright © 2026 Dwane Kimbrough. All rights reserved.
 
 Documentation licensed under MIT. Core concept, methodology, and brand identity remain under the author's copyright.
+
+
