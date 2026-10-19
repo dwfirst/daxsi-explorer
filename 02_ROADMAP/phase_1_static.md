@@ -1,6 +1,6 @@
 ﻿# Phase 1 - Static Laboratory on Cybertruck
 
-Duration: 6 months. Objective: integrate the full sensor matrix and compute cluster into the Cybertruck platform in a stationary configuration. No driving, no manipulator.
+Duration: 6 months. Objective: integrate the full Sensor Matrix and compute cluster into the Cybertruck platform in a stationary configuration. No driving, no manipulator.
 
 ---
 
@@ -10,7 +10,7 @@ Phase 1 proves that the platform works as a stationary laboratory. The vehicle i
 
 | In scope | Out of scope |
 |---|---|
-| Full sensor matrix | Mobile survey |
+| Full Sensor Matrix | Mobile survey |
 | All three compute nodes | Manipulator deployment |
 | Isolation enclosures | Portable kit field use |
 | Thermal loops A and B | Starlink orbital validation |
@@ -41,7 +41,7 @@ Phase 1 proves that the platform works as a stationary laboratory. The vehicle i
 | ID | Task | Deliverable | Status |
 |---|---|---|---|
 | P1-01 | Install and seal Node 01/02/03 enclosures | Isolated compute | `[PLANNED]` |
-| P1-02 | Mount sensor matrix | Full coverage | `[PLANNED]` |
+| P1-02 | Mount Sensor Matrix | Full coverage | `[PLANNED]` |
 | P1-03 | Install liquid loop A and roof radiator | Thermal path | `[PLANNED]` |
 | P1-04 | Install liquid loop B | Thermal path | `[PLANNED]` |
 | P1-05 | Install PCM buffer | Thermal buffer | `[PLANNED]` |
@@ -102,3 +102,4 @@ Phase 1 is complete when:
 | Enclosure weight exceeds estimate | Medium | CG shift | Rebalance pod layout |
 | Optical port contamination | High | Link failure | Field cleaning procedure |
 | ECLSS power exceeds budget | Low | Reduced endurance | Derate climate control |
+

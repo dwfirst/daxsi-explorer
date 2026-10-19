@@ -11,9 +11,9 @@ Phase 0 proves that the sensor-to-inference pipeline works. It does not prove ve
 | In scope | Out of scope |
 |---|---|
 | ROS 2 pipeline | Vehicle integration |
-| One hyperspectral sensor | Full sensor matrix |
+| One hyperspectral sensor | Full Sensor Matrix |
 | One LiDAR | Manipulator |
-| One GPU inference node | Thermal loops |
+| One GPU Node 02 | Thermal loops |
 | PTP time sync | Starlink link |
 | iceoryx zero-copy | ECLSS |
 
@@ -100,4 +100,6 @@ A no-go decision is a valid outcome. It redirects effort before vehicle integrat
 | iceoryx incompatibility with sensor driver | Medium | Pipeline redesign | Fallback to standard DDS |
 | 70B model does not fit on 1 GPU at 4-bit | Low | Reduce to 34B | Accept smaller baseline |
 | PTP hardware not available on dev kit | Medium | Use software PTP | Accept < 100 µs alignment |
+
+
 

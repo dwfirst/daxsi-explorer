@@ -57,7 +57,7 @@ Node 01 is the only node that directly faces the operator. It does not run heavy
 | Operating model | Open-weights 70B, 4-bit AWQ |
 | Latency target | < 2 s for 1k-token generation |
 
-Node 02 is the primary reasoning engine. It runs the local backbone model and the multi-spectral vision pipeline.
+Node 02 is the primary reasoning engine. It runs the local Local backbone and the multi-spectral vision pipeline.
 
 #### Node 03 — RAG and Storage
 
@@ -142,3 +142,4 @@ The cluster leaves approximately 7.8 kW of headroom at peak for ECLSS, sensors, 
 4. Real-time kernel latency under full sensor load requires bench validation.
 
 See `01_FEASIBILITY/open_questions.md`.
+

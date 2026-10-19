@@ -6,7 +6,7 @@ This document defines the portable measurement kit carried by the operator into 
 
 ### 1. Design Principle
 
-The kit extends the sensor matrix beyond the vehicle envelope without duplicating the compute cluster.
+The kit extends the Sensor Matrix beyond the vehicle envelope without duplicating the compute cluster.
 
 | Principle | Implementation |
 |---|---|
@@ -111,3 +111,4 @@ In Offline mode, the kit stores data locally and synchronizes when a link is res
 4. Tablet ruggedness under IP67 field use requires validation.
 
 See `01_FEASIBILITY/open_questions.md`.
+
