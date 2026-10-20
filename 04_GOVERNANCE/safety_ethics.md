@@ -35,6 +35,23 @@ No autonomous decision can override a human stop command. The override channel i
 
 ---
 
+
+### 2a. Independent Emergency Stop
+
+The E-stop is a physical circuit, independent of the main compute path and independent of the vehicle's software stack.
+
+| Property | Specification | Status |
+|---|---|---|
+| Type | Physical button + relay | `[COTS]` |
+| Power source | Dedicated battery, 12V | `[COTS]` |
+| Independence | Separate from Node 01/02/03 | `[COTS]` |
+| Function | Cuts manipulator power, signals Idle state | `[COTS]` |
+| Test interval | Before each deployment | `[COTS]` |
+| Failure mode | Fail-safe (opens on loss of power) | `[COTS]` |
+
+The E-stop does not depend on ROS 2, on the operator console, or on any network link. It is a hardware interlock. Its only function is to remove power from the manipulator and signal the platform to enter Idle state.
+
+An E-stop that has not been tested within the last deployment cycle is treated as non-functional.
 ### 3. Autonomous Behavior Limits
 
 | Behavior | Allowed | Conditions |
@@ -116,3 +133,4 @@ Regulatory compliance is the operator's responsibility. The platform provides th
 2. Autonomous anomaly flagging rate under field conditions is unknown.
 3. Environmental impact assessment for sensitive areas is not defined.
 4. Insurance and liability model for autonomous observation is not addressed.
+
