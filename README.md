@@ -15,7 +15,11 @@ This repository is an engineering specification, not a product. It is structured
 | **Feasibility** | TRL of each component, power/thermal budgets | Partially validated |
 | **Roadmap** | Phased path from bench to autonomous missions | Draft |
 
+Current system-level TRL: 2-3 (concept documented, no bench validation). Target TRL after Phase 0: 4.
+
+
 Every technical claim in this repository is tagged with its maturity. Components that are COTS and available today are marked `[COTS]`. Components that exist as prototypes are marked `[PROTO]`. Components that are architectural placeholders are marked `[CONCEPT]`.
+
 
 ---
 
@@ -250,6 +254,7 @@ daxsi-explorer/
   06_portable_kit.md
   07_isolation_enclosure.md
  01_FEASIBILITY/
+  prior_art.md
   trl_matrix.md
   power_budget.md
   thermal_budget.md
@@ -282,6 +287,12 @@ Dwane Kimbrough (dwfirst)
 ## License
 
 Documentation licensed under CC BY-NC-SA 4.0. Code (if and when added) under MIT or Apache 2.0. Core concept, methodology, and brand identity remain under the author's copyright. See `INTELLECTUAL_PROPERTY.md`.
+
+
+
+
+
+
 
 
 
