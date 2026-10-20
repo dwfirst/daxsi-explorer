@@ -31,12 +31,15 @@ No text in this repository should be read as a claim of AI authorship. The model
 
 | Component | License |
 |---|---|
-| Documentation (this repository) | MIT License |
+| Documentation (this repository) | CC BY-NC-SA 4.0 |
+| Code (if and when added) | MIT or Apache 2.0 |
 | Core concept and methodology | Author's copyright |
 | Brand identity (DAXSI) | Author's copyright |
 | Third-party component names | Property of respective owners |
 
-The MIT License covers the text of this repository. It does not grant rights to the DAXSI name, the core methodology, or any patentable element of the architecture.
+Documentation is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0). This permits non-commercial use, adaptation, and redistribution with attribution and under the same license. Commercial use requires written permission from the author.
+
+The license covers the text of this repository. It does not grant rights to the DAXSI name, the core methodology, or any patentable element of the architecture.
 
 ---
 
@@ -50,7 +53,7 @@ This applies to:
 - Use of the DAXSI name in a commercial context.
 - Filing of patents based on the described methodology.
 
-Educational use, research use, and community evaluation are permitted under the MIT License without additional permission.
+Educational use, research use, and community evaluation are permitted under CC BY-NC-SA 4.0 without additional permission.
 
 ---
 
@@ -75,5 +78,11 @@ All trademarks remain the property of their respective owners.
 Copyright © 2026 Dwane Kimbrough. All rights reserved.
 
 Documentation licensed under MIT. Core concept, methodology, and brand identity remain under the author's copyright.
+
+
+
+
+
+
 
 

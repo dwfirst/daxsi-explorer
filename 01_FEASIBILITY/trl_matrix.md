@@ -129,14 +129,14 @@ This document assigns a Technology Readiness Level (TRL) to every major componen
 
 ### 10. System-Level Assessment
 
-| Level | TRL | Basis |
+| Phase | Target TRL | Basis |
 |---|---|---|
-| Baseline system (Phase 0) | 6 | Prototype can be demonstrated in lab |
-| Static laboratory (Phase 1) | 5 | Component validated in relevant environment |
-| Mobile survey (Phase 2) | 4 | Component validated in lab |
-| Autonomous missions (Phase 3) | 3 | Experimental proof of concept |
+| Phase 0 (bench) | 4 | Component validated in laboratory |
+| Phase 1 (static) | 5 | Component validated in relevant environment |
+| Phase 2 (mobile) | 6 | Prototype demonstrated in relevant environment |
+| Phase 3 (autonomous) | 7 | Prototype demonstrated in operational environment |
 
-The system as a whole is TRL 4–6. Individual COTS components are TRL 8–9. The gap is integration, not invention.
+Current system-level TRL: 2-3. The concept is documented and the architecture is specified, but no bench validation has been performed. No software component has been implemented and no test report has been produced. Individual COTS components are TRL 8-9. The gap is integration and validation, not invention.
 
 ---
 
@@ -153,3 +153,5 @@ Components with TRL below 6 that block system-level readiness.
 | Milvus/Qdrant index size | 6 | Phase 1 RAG |
 
 These items define the development schedule. Everything else is integration.
+
+

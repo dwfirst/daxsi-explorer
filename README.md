@@ -281,7 +281,8 @@ Dwane Kimbrough (dwfirst)
 ---
 ## License
 
-MIT License for educational and community evaluation. Core concept, methodology, and brand identity remain under the author's copyright. See `INTELLECTUAL_PROPERTY.md`.
+Documentation licensed under CC BY-NC-SA 4.0. Code (if and when added) under MIT or Apache 2.0. Core concept, methodology, and brand identity remain under the author's copyright. See `INTELLECTUAL_PROPERTY.md`.
+
 
 
 
