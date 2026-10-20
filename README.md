@@ -81,7 +81,7 @@ Block-scalable architecture. Baseline configuration uses COTS hardware; expansio
 | 01 | Command Core | 2 Jetson AGX Orin 64GB | 128 GB | `[COTS]` |
 | 02 | Inference Primary | 4 RTX 6000 Ada 48GB | 192 GB | `[COTS]` |
 | 03 | RAG / Storage | 8 Jetson Orin NX 16GB | 128 GB | `[COTS]` |
-| **Baseline total** | | | **448 GB** | |
+| **Baseline total** | | | **448 GB combined** | |
 | 02 expanded | Inference Primary | 8 RTX 6000 Ada 48GB | 384 GB | `[COTS]` |
 | 03 expanded | RAG / Storage | 4 L40S 48GB | 192 GB | `[COTS]` |
 | **Expanded total** | | | **704 GB** | |
@@ -102,7 +102,7 @@ Full-spectrum perception is organized by physical field, not by device list. Eac
 | EM  optical | SWIR 9001700 nm | ATH1700-17 (snapshot, 25 fps) | `[COTS]` |
 | EM  optical | SWIR ext. 9602500 nm | Specim SX25 | `[COTS]` |
 | EM  thermal | LWIR 7.712.3 µm | FLIR Boson 640 | `[COTS]` |
-| EM  ranging | 905 / 1550 nm | Ouster OS1-128 | `[COTS]` |
+| EM  ranging | 865 nm | Ouster OS1-128 (865 nm) | `[COTS]` |
 | EM  ionizing | gamma / beta | SBM-20 Geiger | `[COTS]` |
 | EM  magnetic | 3-axis | fluxgate magnetometer | `[COTS]` |
 | Chemical | VOC, CO2, CH4, NOx | Bosch BME680 + NDIR + electrochemical cells | `[COTS]` |
@@ -282,5 +282,8 @@ Dwane Kimbrough (dwfirst)
 ## License
 
 MIT License for educational and community evaluation. Core concept, methodology, and brand identity remain under the author's copyright. See `INTELLECTUAL_PROPERTY.md`.
+
+
+
 
 

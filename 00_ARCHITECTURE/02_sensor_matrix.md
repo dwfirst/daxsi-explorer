@@ -28,7 +28,7 @@ Pushbroom hyperspectral instruments are excluded from the mobile platform. They 
 | EM — optical | SWIR 900–1700 nm | ATH1700-17 | 1.1 kg | GigE | `[COTS]` |
 | EM — optical | SWIR ext. 960–2500 nm | Specim SX25 | 4.0 kg | GigE | `[COTS]` |
 | EM — thermal | LWIR 7.7–12.3 µm | FLIR Boson 640 | 7.5 g | GMSL2 / USB | `[COTS]` |
-| EM — ranging | 905 / 1550 nm | Ouster OS1-128 | 950 g | Ethernet UDP | `[COTS]` |
+| EM — ranging | 865 nm | Ouster OS1-128 | 950 g | Ethernet UDP | `[COTS]` |
 | EM — ionizing | gamma / beta | SBM-20 Geiger | 40 g | UART | `[COTS]` |
 | EM — magnetic | 3-axis | Fluxgate magnetometer | 80 g | I2C / UART | `[COTS]` |
 | Chemical | VOC, CO2, CH4, NOx | Bosch BME680 + NDIR + electrochemical cells | 30 g | I2C / UART | `[COTS]` |
@@ -122,5 +122,6 @@ Calibration records are stored in the empirical vault with timestamps. An uncali
 4. ESP-NOW mesh range under vehicle body obstruction requires field measurement.
 
 See `01_FEASIBILITY/open_questions.md`.
+
 
 

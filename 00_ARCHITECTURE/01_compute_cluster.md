@@ -22,10 +22,10 @@ The cluster is organized by function, not by capacity. Each node has a distinct 
 
 | Node | Role | Hardware | VRAM | Power (peak) | Status |
 |---|---|---|---|---|---|
-| 01 | Command Core | 2× Jetson AGX Orin 64GB | 128 GB | 0.12 kW | `[COTS]` |
-| 02 | Inference Primary | 4× RTX 6000 Ada 48GB | 192 GB | 1.2 kW | `[COTS]` |
-| 03 | RAG / Storage | 8× Jetson Orin NX 16GB | 128 GB | 0.16 kW | `[COTS]` |
-| **Baseline total** | | | **448 GB** | **1.48 kW** | |
+| 01 | Command Core | 2× Jetson AGX Orin 64GB | 128 GB unified | 0.12 kW | `[COTS]` |
+| 02 | Inference Primary | 4× RTX 6000 Ada 48GB | 192 GB | 1.8 kW | `[COTS]` |
+| 03 | RAG / Storage | 8× Jetson Orin NX 16GB | 128 GB unified | 0.16 kW | `[COTS]` |
+| **Baseline total** | | | **448 GB combined** | **1.48 kW** | |
 
 The baseline is fully COTS. Every component is available today.
 
@@ -55,7 +55,7 @@ Node 01 is the only node that directly faces the operator. It does not run heavy
 | VRAM | 192 GB |
 | Role | Heavy local LLM execution, vision processing, hypothesis generation |
 | Operating model | Open-weights 70B, 4-bit AWQ |
-| Latency target | < 2 s for 1k-token generation |
+| Latency target | < 2 s for first token; ~60 s for 1k-token generation on baseline |
 
 Node 02 is the primary reasoning engine. It runs the local Local backbone and the multi-spectral vision pipeline.
 
@@ -80,7 +80,7 @@ The baseline is not the ceiling. Each node has a defined expansion path.
 
 | Stage | Node 02 | Node 03 | Total VRAM | Status |
 |---|---|---|---|---|
-| Baseline | 4× RTX 6000 Ada (192 GB) | 8× Orin NX (128 GB) | 448 GB | `[COTS]` |
+| Baseline | 4× RTX 6000 Ada (192 GB) | 8× Orin NX (128 GB) | 448 GB combined | `[COTS]` |
 | Stage 1 | 8× RTX 6000 Ada (384 GB) | 8× Orin NX (128 GB) | 640 GB | `[COTS]` |
 | Stage 2 | 8× RTX 6000 Ada (384 GB) | 4× L40S (192 GB) | 704 GB | `[COTS]` |
 | Stage 3 | External dock | External dock | ~1 TB | `[CONCEPT]` |
@@ -125,10 +125,10 @@ No copper data conductor crosses an enclosure boundary. See `07_isolation_enclos
 | Node | Peak | Average | Notes |
 |---|---|---|---|
 | Node 01 | 0.12 kW | 0.08 kW | Continuous |
-| Node 02 | 1.2 kW | 0.8 kW | Burst on inference |
+| Node 02 | 1.8 kW | 1.2 kW | Burst on inference |
 | Node 03 | 0.16 kW | 0.12 kW | Continuous |
 | Cooling (shared) | 0.3 kW | 0.15 kW | Variable |
-| **Cluster total** | **1.78 kW** | **1.15 kW** | Within 9.6 kW envelope |
+| **Cluster total** | **2.38 kW** | **1.55 kW** | Within 9.6 kW envelope |
 
 The cluster leaves approximately 7.8 kW of headroom at peak for ECLSS, sensors, and charging. This headroom is the real constraint on expansion, not VRAM.
 
@@ -142,4 +142,7 @@ The cluster leaves approximately 7.8 kW of headroom at peak for ECLSS, sensors, 
 4. Real-time kernel latency under full sensor load requires bench validation.
 
 See `01_FEASIBILITY/open_questions.md`.
+
+
+
 
